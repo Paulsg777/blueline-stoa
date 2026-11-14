@@ -1204,7 +1204,7 @@ function size3D(){if(!T3.R)return;const el=$('#vw'),w=el.clientWidth||800,h=el.c
 function pick3D(e){const r=$('#c3').getBoundingClientRect();T3.ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);T3.ray.setFromCamera(T3.ndc,T3.cam);
   const objs=[...T3.G.values()].filter(G=>G.g.visible).map(G=>G.pick),hit=T3.ray.intersectObjects(objs,false)[0];return hit?hit.object.userData.fid:null;}
 function mppOf(f){let m=f.schema&&f.schema.drawing.metersPerPixel;
-  if(m&&f.schema.rooms.length&&!f.sample){const c=cropOf(f),ext=Math.max(c[2]-c[0],c[3]-c[1])*m;if(ext<6||ext>120)m=22/Math.max(c[2]-c[0],c[3]-c[1]);} // a scale that makes the floor 2 m or 2 km wide is wrong: draw it at a plausible size
+  if(m&&f.schema.rooms.length&&!f.sample){const c=cropOf(f),ext=Math.max(c[2]-c[0],c[3]-c[1])*m;if(ext<8||ext>80)m=20/Math.max(c[2]-c[0],c[3]-c[1]);} // a scale that makes the floor 2 m or 2 km wide is wrong: draw it at a plausible size
   if(m)return m;if(f.sample)return 1/PPM;
   const ms=bld(f.bId).floors.map(id=>FL[id].schema&&FL[id].schema.drawing.metersPerPixel).filter(Boolean).sort((a,b)=>a-b);if(ms.length)return ms[ms.length>>1];const[W,H]=dims(f);return 24/Math.max(W,H);}
 /* ---------- 3D from the schema alone. Rooms are filled on a fine grid, the band around them
@@ -1273,8 +1273,8 @@ function build3DFloor(f){const THREE=T3.THREE,mpp=mppOf(f),key=f.v+':'+mpp.toFix
   const B=(list,mat)=>{if(!list.length)return 0;const im=new THREE.InstancedMesh(T3.gBox,mat,list.length),M=new THREE.Matrix4(),q=new THREE.Quaternion(),p=new THREE.Vector3(),s=new THREE.Vector3(),ax=new THREE.Vector3(0,1,0);
     list.forEach((b,i)=>{p.set(b.x,(b.y0+b.y1)/2,b.z);s.set(Math.max(.02,b.w),Math.max(.02,b.y1-b.y0),Math.max(.02,b.d));q.setFromAxisAngle(ax,b.rot||0);M.compose(p,q,s);im.setMatrixAt(i,M);});
     im.instanceMatrix.needsUpdate=true;wg.add(im);return list.length;};
-  if(sc&&sc._scene3d){const L={wall:[],door:[],window:[],fix:[]};
-    for(const e of sc._scene3d.elements||[]){if(!e.box||!e.box.c||!e.box.s)continue;const b=e.box;(L[e.kind]||L.fix).push({x:b.c[0]-ox,z:b.c[2]-oz,w:b.s[0],d:b.s[2],y0:b.c[1]-b.s[1]/2,y1:b.c[1]+b.s[1]/2,rot:b.yaw||0});}
+  if(sc&&sc._scene3d){const L={wall:[],door:[],window:[],fix:[]},S3=sc._scene3d,kk=((f.img?f.img.W:PW)/S3.size[0])*mpp,hh=WH/(+S3.wall_height||WH); // the scene's metres are put on the same footing as the plan, heights kept at storey height
+    for(const e of S3.elements||[]){if(!e.box||!e.box.c||!e.box.s)continue;const b=e.box;(L[e.kind]||L.fix).push({x:b.c[0]*kk-ox,z:b.c[2]*kk-oz,w:b.s[0]*kk,d:b.s[2]*kk,y0:Math.max(0,(b.c[1]-b.s[1]/2)*hh),y1:Math.min(WH,(b.c[1]+b.s[1]/2)*hh),rot:b.yaw||0});}
     B(L.wall,mW);B(L.door,T3.mDoor);B(L.window,T3.mGlass);B(L.fix,T3.mFix);
     note=`The team model's own 3D scene, drawn as delivered: ${L.wall.length} wall pieces, ${L.door.length} doors, ${L.window.length} windows, ${L.fix.length} fixtures.`;}
   else if(sc&&sc.rooms.length){const W=wallModel(f,mpp);

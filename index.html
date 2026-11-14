@@ -1438,7 +1438,7 @@ async function askServer(q,d){const f=FL[ST.fid];if(!f||!f.img||!f.img.blob)retu
   try{const fd=new FormData();fd.append('file',await fullRes(f.img),f.file||'sheet.png');fd.append('question',q);
     const r=await fetch(CFG.endpoint.replace(/\/$/,'')+'/ask',{method:'POST',body:fd}),j=await r.json().catch(()=>({}));
     if(!r.ok||j.error)throw new Error(j.error||('the server answered '+r.status));
-    if(j.answer==null)throw new Error('no answer the tools could support');
+    if(j.answer==null){note.textContent=j.status==='cant_verify'?'The drawing itself does not answer this either.':'No answer the tools on this sheet could support.';return;}
     const v=typeof j.answer==='number'?Math.round(j.answer*100)/100:j.answer,pill=j.modelCalls===0?['ok','Measured on the drawing']:j.status==='confident'?['ok','Two methods agree']:['chk','Check this'];
     d.innerHTML=`<div class="ahead"><span class="asc">${esc(fname(f))}</span><span class="pill ${pill[0]}">${esc(pill[1])}</span></div><div class="big"><b>${esc(String(v))}</b><span class="u">${esc(j.unit||'')}</span></div>`
       +`<div class="atext">${esc(j.source)} · ${j.modelCalls} model call${j.modelCalls===1?'':'s'}, ${j.tokens} tokens</div>`

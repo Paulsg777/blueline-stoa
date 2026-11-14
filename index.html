@@ -17,7 +17,7 @@
 :root{color-scheme:dark;--app:#1C1C1C;--pan:#232323;--hdr:#262626;--card:#2A2A2A;--card2:#303030;--fld:#1F1F1F;--vp:#2D2D2D;--bd:#151515;--bd2:#3A3A3A;--ink:#E4E4E4;--mut:#9A9A9A;--fnt:#6E6E6E;--blue:#5B95FF;--blue2:#8DB6FF;--bdg:#3A74E8;--bsel:#2B4677;--org:#E8A33D;--ok:#7CC48A;--red:#E06C6C}
 *{box-sizing:border-box;min-width:0}
 html,body{height:100%}
-body{margin:0;background:var(--app);color:var(--ink);font:13px/1.45 Inter,system-ui,sans-serif;overflow:hidden}
+body{margin:0;background:var(--app);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif;overflow:hidden}
 button{font:inherit;color:inherit;cursor:pointer}
 input,textarea{font:inherit;color:inherit}
 [hidden]{display:none!important}
@@ -58,15 +58,15 @@ body.dragui,body.dragui *{cursor:grabbing!important;user-select:none!important}
 .ttabs{display:flex;gap:2px;background:#1B1B1B;border:1px solid var(--bd2);border-radius:8px;padding:2px}
 .ttabs button{border:0;background:none;border-radius:6px;padding:3px 11px;font-size:12px;color:var(--mut);white-space:nowrap}
 .ttabs button.on{background:#3A3A3A;color:#fff}
-.trb{flex:1;overflow:auto;padding:6px 14px 14px;font-size:12.5px}
+.trb{flex:1;overflow:auto;padding:8px 16px 16px;font-size:13.5px}
 .tq{color:#E0E0E0;margin:6px 0 6px;font-weight:500}
 .tgh{display:flex;align-items:center;gap:8px;color:#E0E0E0;font-weight:600;margin:12px 0 2px}
 .tgh:first-child{margin-top:6px}
 .tgh .asc{font-weight:400}
-.ts{display:grid;grid-template-columns:12px 168px minmax(0,1fr) 62px;gap:10px;align-items:start;padding:5px 0;border-bottom:1px solid #2B2B2B}
-.ts code{font:500 11.5px/1.5 'JetBrains Mono',monospace;color:var(--blue2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ts .td{color:#C9C9C9;line-height:1.5;word-break:break-word}
-.ts .tm{font:11px/1.6 'JetBrains Mono',monospace;color:var(--fnt);text-align:right;white-space:nowrap}
+.ts{display:grid;grid-template-columns:12px 190px minmax(0,1fr) 70px;gap:12px;align-items:start;padding:7px 0;border-bottom:1px solid #2B2B2B}
+.ts code{font:500 12.5px/1.5 'JetBrains Mono',monospace;color:var(--blue2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts .td{color:#D2D2D2;line-height:1.5;font-size:13.5px;word-break:break-word}
+.ts .tm{font:12px/1.6 'JetBrains Mono',monospace;color:var(--fnt);text-align:right;white-space:nowrap}
 .tdot{width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--ok)}
 .ts.run .tdot{background:var(--blue);animation:pulse 1s infinite}
 .ts.err .tdot{background:var(--red)}.ts.warn .tdot{background:var(--org)}
@@ -91,7 +91,7 @@ table.kt{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
 .gt{position:relative;height:10px;background:#1C1C1C;border-radius:5px;overflow:hidden}
 .gt i{position:absolute;top:0;bottom:0;border-radius:5px;background:var(--ok);min-width:3px}
 .gt i.reading{background:var(--blue);animation:pulse 1s infinite}.gt i.error,.gt i.nokey{background:var(--red)}.gt i.queued,.gt i.idle{background:#555}
-.gv{font:11px 'JetBrains Mono',monospace;color:var(--fnt);text-align:right}
+.gv{font:12px 'JetBrains Mono',monospace;color:var(--fnt);text-align:right}
 .tsum{color:var(--mut);margin:6px 0 4px;line-height:1.5}
 .tsum b{color:#E6E6E6;font-weight:600}
 .ttabs .tl{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue2);margin-left:6px;vertical-align:middle;animation:pulse 1s infinite}
@@ -129,7 +129,7 @@ table.kt{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
 .fmain{display:flex;flex-direction:column;gap:2px;overflow:hidden}
 .fnm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fnm input{width:100%;background:var(--fld);border:1px solid var(--blue);border-radius:4px;padding:1px 5px;font-weight:600}
-.fsub{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsub{font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fsub .er{color:#E89A9A}.fsub .wr{color:var(--org)}.fsub .rd{color:var(--blue2)}
 .fside{display:flex;align-items:center;gap:4px}
 .fbadge{font:600 11.5px 'JetBrains Mono',monospace;background:var(--bdg);color:#fff;border-radius:10px;padding:1px 7px}
@@ -256,7 +256,7 @@ table.kt{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
 .ans{background:var(--card);border:1px solid var(--bd2);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:8px}
 .ans.act{border-color:#4A6FB0;box-shadow:0 0 0 1px #4A6FB0}
 .ahead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.asc{color:var(--mut);font-size:12px}
+.asc{color:var(--mut);font-size:13px}
 .pill{font-size:11.5px;border-radius:10px;padding:1px 8px;white-space:nowrap}
 .pill.ok{background:#22382A;color:var(--ok)}.pill.chk{background:#40311B;color:var(--org)}.pill.no{background:#3A2424;color:#E89A9A}
 .big{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
@@ -276,7 +276,7 @@ table.kt{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
 .ev:hover{filter:brightness(1.2)}
 details.how summary{cursor:pointer;color:var(--mut);font-size:12px}
 details.how summary:hover{color:var(--ink)}
-.calc{margin-top:6px;font:11.5px/1.5 'JetBrains Mono',monospace;color:#9FB6DA;background:#212121;border-radius:6px;padding:6px 8px;white-space:pre-wrap;word-break:break-word}
+.calc{margin-top:6px;font:12.5px/1.55 'JetBrains Mono',monospace;color:#9FB6DA;background:#212121;border-radius:6px;padding:6px 8px;white-space:pre-wrap;word-break:break-word}
 .afoot{margin-top:5px;font-size:11.5px;color:var(--fnt)}
 .aact{display:flex;gap:12px;align-items:center}
 .alink{border:0;background:none;color:var(--blue2);padding:0;font-size:12px}
@@ -306,7 +306,7 @@ details.how summary:hover{color:var(--ink)}
 .keys kbd{font:500 11.5px 'JetBrains Mono',monospace;background:#1E1E1E;border:1px solid #3A3A3A;border-radius:4px;padding:1px 6px;color:#E4E4E4}
 .toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:#333;border:1px solid #484848;border-radius:10px;padding:9px 14px;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.45);max-width:calc(100% - 24px)}
 .toast button{border:0;background:none;color:var(--blue2);font-weight:600;padding:0}
-.status{display:flex;align-items:center;gap:12px;padding:0 12px;background:var(--hdr);border-top:1px solid var(--bd);font-size:12px;color:var(--mut);white-space:nowrap;overflow:hidden}
+.status{display:flex;align-items:center;gap:12px;padding:0 12px;background:var(--hdr);border-top:1px solid var(--bd);font-size:12.5px;color:var(--mut);white-space:nowrap;overflow:hidden}
 .status .sp{flex:1}
 
 @media (max-width:1180px){.body{grid-template-columns:240px minmax(0,1fr) 316px}.pname{width:150px}}
@@ -376,7 +376,7 @@ details.how summary:hover{color:var(--ink)}
     </section>
     </div>
     <aside class="right" aria-label="Ask">
-      <div class="ahd"><h3>Ask about</h3><div class="seg" id="seg"></div></div>
+      <div class="seg" id="seg" hidden></div>
       <div class="msgs" id="msgs"></div>
       <form class="composer" id="comp">
         <textarea id="q" rows="1" placeholder="Ask a question about the drawings"></textarea>
@@ -749,12 +749,25 @@ async function readAnalyze(f,ep,blob,ctl){const fd=new FormData();fd.append('fil
   const nm=s.rooms.filter(r=>r.measuredAreaM2!=null).length,tg=(s.texts||[]).reduce((a,t)=>a+((t&&t.tags)||[]).length,0),M=s.meta||{};
   rstep(f,'model.analyze','ok',`schema: ${s.rooms.length} rooms${nm?` (${nm} with an area measured on the drawing)`:''}, ${s.items.length} items${tg?`, ${tg} tagged texts`:''}${M.msRead?` · ${fmtMs(+M.msRead)} on the server`:''}${M.modelCalls!=null?` · ${M.modelCalls} model calls`:''}${M.source?` · ${M.source}`:''}`);
   f.schema=s;f.ctl=null;if(!f.img&&!f.sample)putDef(f);schemaSteps(f);finishRead(f,'our model');}
-function finishRead(f,by){if(f.deleted)return;f.status='read';f.readBy=by;f.err=null;f.errShort='';f.v++;f.justRead=true;if(f.rt)f.rt.e=performance.now();if(!f.sample)f._simg=null;
+function finishRead(f,by){if(f.deleted)return;if(f.schema&&!f.sample)tidySchema(f);f.status='read';f.readBy=by;f.err=null;f.errShort='';f.v++;f.justRead=true;if(f.rt)f.rt.e=performance.now();if(!f.sample)f._simg=null;
   patchCard(f);if(f.id===ST.fid&&ST.view==='plan'){if(VB[f.id]&&VB[f.id].auto)delete VB[f.id];renderPlan();}sync3D();rerunAnswers();renderStatus();renderAskEmpty();trSoon();}
 function failRead(f,e){if(f.deleted)return;const[msg,short]=errInfo(e);if(f.rt&&!f.rt.e)f.rt.e=performance.now();
   if(e&&e.code==='cancelled'){f.status='idle';f.err='Stopped. Read it again when you are ready.';f.errShort='stopped';}
   else{f.status='error';f.err=msg;f.errShort=short;}
   patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();}
+function tidySchema(f){const sc=f.schema,R=sc.rooms;if(R.length<2&&!sc.items.length)return;
+  const W=sc.drawing.width,H=sc.drawing.height,mpp=sc.drawing.metersPerPixel,tol=mpp?1.5/mpp:Math.max(W,H)*.03;
+  const bb=R.map(r=>{let a=1e9,b=1e9,c=-1e9,d=-1e9;r.polygon.forEach(([x,y])=>{a=Math.min(a,x);b=Math.min(b,y);c=Math.max(c,x);d=Math.max(d,y);});return[a,b,c,d];});
+  const thin=r=>{const i=R.indexOf(r),q=bb[i],w=q[2]-q[0],h=q[3]-q[1],ar=mpp?shoelace(r.polygon)*mpp*mpp:null;return Math.max(w,h)/Math.max(1,Math.min(w,h))>14||(ar!=null&&ar<.4);};
+  const par=R.map((_,i)=>i),find=i=>par[i]===i?i:(par[i]=find(par[i]));
+  for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const a=bb[i],b=bb[j];if(a[0]-tol<=b[2]&&b[0]-tol<=a[2]&&a[1]-tol<=b[3]&&b[1]-tol<=a[3])par[find(i)]=find(j);}
+  const tot={};R.forEach((r,i)=>{if(thin(r))return;const k=find(i);tot[k]=(tot[k]||0)+shoelace(r.polygon);});
+  const main=Object.keys(tot).sort((a,b)=>tot[b]-tot[a])[0];if(main==null)return;
+  const keep=R.filter((r,i)=>find(i)==main&&!thin(r));let a=1e9,b=1e9,c=-1e9,d=-1e9;keep.forEach(r=>{const q=bb[R.indexOf(r)];a=Math.min(a,q[0]);b=Math.min(b,q[1]);c=Math.max(c,q[2]);d=Math.max(d,q[3]);});
+  const ids=new Set(keep.map(r=>r.id)),items=sc.items.filter(it=>{const x=(it.box[0]+it.box[2])/2,y=(it.box[1]+it.box[3])/2;return x>=a-tol&&x<=c+tol&&y>=b-tol&&y<=d+tol;});
+  const dr=R.length-keep.length,di=sc.items.length-items.length;
+  if(dr||di){sc.rooms=keep;sc.items=items.map(it=>({...it,roomIds:(it.roomIds||[]).filter(id=>ids.has(id))}));}
+  rstep(f,'drop_outside',dr||di?'warn':'ok',dr||di?`Left out ${dr} room${dr===1?'':'s'} and ${di} item${di===1?'':'s'} outside the floor plan (title block, legend, notes or footnotes).`:'Everything the model returned sits inside the floor plan.');}
 async function origBlob(P){if(P.orig)return P.orig;if(P.origCanvas){if(!P._ob)P._ob=await new Promise(r=>P.origCanvas.toBlob(r,'image/png'));return P._ob;}return P.blob;}
 async function samplePng(f){const img=await svgImage(f);const c=document.createElement('canvas');c.width=PW;c.height=PH;c.getContext('2d').drawImage(img,0,0);return new Promise(r=>c.toBlob(r,'image/png'));}
 function svgImage(f){if(!f.sample&&!f.schema)return Promise.reject(new Error('nothing to draw'));
@@ -1153,7 +1166,7 @@ function renderEmpty(){$('#empty').innerHTML=`<div class="dz"><svg class="ill" v
    9. 3D view: the floors of the building stacked, walls rising as each
       floor is read. three.js loads from the CDN the first time.
    ===================================================================== */
-const T3={ok:null,on:false,G:new Map(),spread:.35,iso:false,hover:null,hoverList:null,framed:false,raf:0,lt:0};
+const T3={ok:null,on:false,G:new Map(),spread:.12,iso:false,hover:null,hoverList:null,framed:false,raf:0,lt:0};
 const FH=3.0,WH=2.7;
 async function ensure3D(){if(T3.ok)return true;if(T3.ok===false)return false;
   try{const THREE=await import('three'),{OrbitControls}=await import('three/addons/controls/OrbitControls.js');T3.THREE=THREE;init3D(OrbitControls);T3.ok=true;return true;}
@@ -1174,15 +1187,17 @@ function init3D(OrbitControls){const THREE=T3.THREE,c=$('#c3');
   [T3.mGlass,T3.mFix,T3.mDoor].forEach(m=>T3.shared.add(m));
   let down=null;
   c.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];T3.camAnim=null;});
-  c.addEventListener('pointerup',e=>{const d=down;down=null;if(!d||Math.abs(e.clientX-d[0])+Math.abs(e.clientY-d[1])>5)return;const fid=pick3D(e);if(fid)selectFloor(fid,{from3d:1});});
-  c.addEventListener('dblclick',e=>{const fid=pick3D(e);if(fid){selectFloor(fid,{from3d:1});setView('plan');}});
+  c.addEventListener('pointerup',e=>{const d=down;down=null;if(!d||Math.abs(e.clientX-d[0])+Math.abs(e.clientY-d[1])>5)return;const fid=pick3D(e);if(fid){if(fid===ST.fid)setView('plan');else selectFloor(fid,{from3d:1});}});
+  c.addEventListener('dblclick_off',e=>{const fid=pick3D(e);if(fid){selectFloor(fid,{from3d:1});setView('plan');}});
   c.addEventListener('pointermove',e=>{if(e.buttons)return;const fid=pick3D(e);if(fid!==T3.hover){T3.hover=fid;c.style.cursor=fid?'pointer':'';paint3D();labels3D();}});
   c.addEventListener('pointerleave',()=>{T3.hover=null;paint3D();labels3D();});
 }
 function size3D(){if(!T3.R)return;const el=$('#vw'),w=el.clientWidth||800,h=el.clientHeight||600;T3.R.setSize(w,h,false);T3.cam.aspect=w/h;T3.cam.updateProjectionMatrix();}
 function pick3D(e){const r=$('#c3').getBoundingClientRect();T3.ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);T3.ray.setFromCamera(T3.ndc,T3.cam);
   const objs=[...T3.G.values()].filter(G=>G.g.visible).map(G=>G.pick),hit=T3.ray.intersectObjects(objs,false)[0];return hit?hit.object.userData.fid:null;}
-function mppOf(f){const m=f.schema&&f.schema.drawing.metersPerPixel;if(m)return m;if(f.sample)return 1/PPM;
+function mppOf(f){let m=f.schema&&f.schema.drawing.metersPerPixel;
+  if(m&&f.schema.rooms.length&&!f.sample){const c=cropOf(f),ext=Math.max(c[2]-c[0],c[3]-c[1])*m;if(ext<5||ext>250)m=25/Math.max(c[2]-c[0],c[3]-c[1]);} // a scale that makes the floor 2 m or 2 km wide is wrong: draw it at a plausible size
+  if(m)return m;if(f.sample)return 1/PPM;
   const ms=bld(f.bId).floors.map(id=>FL[id].schema&&FL[id].schema.drawing.metersPerPixel).filter(Boolean).sort((a,b)=>a-b);if(ms.length)return ms[ms.length>>1];const[W,H]=dims(f);return 24/Math.max(W,H);}
 /* ---------- 3D from the schema alone. Rooms are filled on a fine grid, the band around them
    becomes wall, and every door or window cuts an opening. Works the same whether the schema
@@ -1275,7 +1290,7 @@ function sync3D(){if(!T3.ok)return;const b=curB(),ids=new Set(b.floors);
   for(const[fid,G]of T3.G)if(!ids.has(fid)){T3.root.remove(G.g);disposeObj(G.g);T3.G.delete(fid);}
   b.floors.forEach((fid,i)=>{const G=build3DFloor(FL[fid]);G.ty=i*FH*(1+T3.spread*2);if(G.y==null){G.y=G.ty;G.g.position.y=G.y;}G.g.visible=!T3.iso||fid===ST.fid;});
   pins3D();paint3D();labels3D(true);roomLabels3D();if(T3.on&&!T3.framed&&b.floors.length){frame3D(false);T3.framed=true;}
-  $('#hint3').innerHTML=b.floors.length?'Drag to orbit · right-drag to pan · scroll to zoom · <b>click</b> a floor to pick it · <b>double-click</b> to open its plan':'';}
+  $('#hint3').innerHTML=b.floors.length?'Drag to turn · scroll to zoom · <b>click</b> a floor to open it':'';}
 function paint3D(){if(!T3.ok)return;for(const[fid,G]of T3.G){const sel=fid===ST.fid,hov=fid===T3.hover||fid===T3.hoverList;
   G.mW.color.setHex(sel?0xF4F7FF:hov?0xD8E4FA:0xB8B8B8);G.mE.opacity=sel?.95:hov?.85:.28;G.mE.color.setHex(sel||hov?0x8DB6FF:0x5B95FF);G.mP.opacity=sel?1:.82;}}
 function pins3D(){if(!T3.ok)return;const THREE=T3.THREE,A=ST.active,key=A?A.n+':'+A.rv:'none';
@@ -1303,7 +1318,7 @@ function camPose(pos,tgt,anim){if(!anim||reduced()){T3.cam.position.set(...pos);
   T3.camAnim={p0:T3.cam.position.toArray(),t0:T3.ctl.target.toArray(),p1:pos,t1:tgt,s:performance.now(),ms:650};}
 function frame3D(anim){if(!T3.ok)return;const gs=[...T3.G.values()].filter(G=>G.g.visible);if(!gs.length){camPose([28,24,34],[0,0,0],anim);return;}
   const mw=Math.max(...gs.map(G=>G.w)),md=Math.max(...gs.map(G=>G.d)),y0=Math.min(...gs.map(G=>G.ty)),y1=Math.max(...gs.map(G=>G.ty))+WH,tgt=[0,(y0+y1)/2,0];
-  const r=.5*Math.hypot(mw,md,y1-y0),fv=T3.cam.fov*Math.PI/180,fh=2*Math.atan(Math.tan(fv/2)*(T3.cam.aspect||1.5)),dist=r/Math.sin(Math.min(fv,fh)/2)*1.02,ph=1.02,th=-.72;
+  const r=.5*Math.hypot(mw,md,y1-y0),fv=T3.cam.fov*Math.PI/180,fh=2*Math.atan(Math.tan(fv/2)*(T3.cam.aspect||1.5)),dist=r/Math.sin(Math.min(fv,fh)/2)*.9,ph=1.12,th=-.72;
   camPose([tgt[0]+dist*Math.sin(ph)*Math.sin(th),tgt[1]+dist*Math.cos(ph),tgt[2]+dist*Math.sin(ph)*Math.cos(th)],tgt,anim);}
 function focusFloor3D(fid){if(!T3.ok||!T3.on)return;const G=T3.G.get(fid);if(!G)return;if(T3.iso){frame3D(true);return;}
   const t=T3.ctl.target,dy=G.ty+1.2-t.y;if(Math.abs(dy)<.4)return;const p=T3.cam.position;camPose([p.x,p.y+dy,p.z],[t.x,t.y+dy,t.z],true);}
@@ -1444,7 +1459,7 @@ async function probeModel(ep){ep=String(ep||'').replace(/\/$/,'');if(!ep)return 
 function renderStatus(){const fs=Object.values(FL).filter(f=>!f.deleted),rd=fs.filter(isRead).length,ing=fs.filter(f=>f.status==='reading').length,wait=fs.filter(f=>f.status==='queued').length;
   $('#stat').textContent=fs.length?`${rd}/${fs.length} floors read${ing||wait?` · reading ${ing}${wait?`, ${wait} waiting`:''}, up to ${poolSize()} at a time`:''} · reader: ${readerLabel()}`:`Reader: ${readerLabel()}`;
   const tl=$('#trLive');if(tl)tl.hidden=!(ing||wait);}
-function renderHint(){$('#hint').textContent=!curB().floors.length?'Add floor plans to start, or try the sample building.':ST.view==='3d'?'Click a floor to pick it · double-click to open its plan · drag cards on the left to reorder':'Scroll to zoom · drag to pan · click a room · ↑ ↓ change floor · drag cards to reorder';}
+function renderHint(){$('#hint').textContent=!curB().floors.length?'Add floor plans to start, or try the sample building.':ST.view==='3d'?'Click a floor to pick it, click it again to open its plan':'Scroll to zoom · drag to pan · click a room · ↑ ↓ change floor · drag cards to reorder';}
 function exportCSV(){const rows=[['building','floor','name','file','status','rooms','doors','windows','toilets','saunas','area_m2']];
   PROJ.buildings.forEach(b=>b.floors.forEach((id,i)=>{const f=FL[id],sc=f.schema,c=k=>sc?sc.items.filter(x=>x.kind===k).length:'';rows.push([b.name,i+1,fname(f),f.file,f.status,sc?sc.rooms.length:'',c('door'),c('window'),c('toilet'),sc?sc.rooms.filter(r=>r.type==='Sauna').length:'',sc?sc.rooms.reduce((a,r)=>a+(roomArea(sc,r)||0),0).toFixed(2):'']);}));
   download(`blueline-quantities-${new Date().toISOString().slice(0,10)}.csv`,rows.map(r=>r.map(c=>/[",\n]/.test(String(c))?`"${String(c).replace(/"/g,'""')}"`:c).join(',')).join('\n'),'text/csv');}

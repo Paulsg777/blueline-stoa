@@ -843,7 +843,13 @@ function parseQ(raw){
   else if(P.area&&(m=raw.match(APT_RE))){P.t={area:true};P.kind='aptArea';P.apt=m[1].toUpperCase();P.rule=`Area · apartment ${P.apt}, outdoor spaces left out`;}
   else if(P.area&&(m=raw.match(ROOMNO_RE))){P.t={area:true};P.kind='roomNo';P.no=m[1];P.label=ql;P.rule=`Area · room ${P.no}${ql?` (“${ql}”)`:''}`;}
   else if(P.area&&ql){P.t={label:ql};P.kind='labelArea';P.rule=`Area · rooms labelled “${ql}”`;}
-  else for(const T of TARGETS){const mm=T.re.exec(s);if(mm){P.t=T.t;P.hit=mm[0];P.why=T.why;break;}}
+  else for(let ti=0;ti<TARGETS.length;ti++){const T=TARGETS[ti],mm=T.re.exec(s);if(mm){P.t=T.t;P.hit=mm[0];P.why=T.why;P.ti=ti;break;}}
+  /* is the rule the whole question? Stoa templates are; otherwise extra conditions (in, with, per, larger than, not, and...) mean the rule would answer something else */
+  P.strong=P.ti==null||P.ti<5||P.lang!=='English';
+  if(!P.strong){const core=raw.split('?')[0].toLowerCase().replace(/\([^)]*\)/g,' ').replace(/[,.;:!]/g,' ')
+      .replace(/\b(on|in|of) (this|the) (floor plan|floor|plan|drawing|sheet|building|project|whole building)\b|\bin total\b|\b(on )?(floor|level) \d+\b|\bin building [a-z]\b|\b(across|in) the (whole )?project\b|\ball floors\b|\bwhich (floor|level|storey|building)\b|\bwhich is the\b|\b(have|has|with) (a |an |their own |own )?sauna\b|\bhow many\b|\bare there\b|\bis there\b/g,' ');
+    const ex=core.match(/\b(in|inside|within|with|without|per|each|larger|smaller|bigger|greater|more than|less than|over|under|at least|at most|between|except|excluding|not|than|near|next to|adjacent|connected|and|or|both|only)\b/g);
+    P.strong=!ex;P.extra=ex?[...new Set(ex)]:null;}
   if(P.t&&P.t.units&&/sauna/.test(s))P.withSauna=true;
   if(!P.t&&(P.area||P.largest||P.smallest)){P.t={allRooms:true};P.why='rooms';}
   P.tag=(raw.match(/\b[A-Z]{1,5}-\d{1,4}[A-Z]?\b/)||[])[0]||null; // tagged objects such as PS-12 live in the sheet's text, not in the schema
@@ -852,6 +858,7 @@ function parseQ(raw){
   if(!P.rule)P.rule=P.unsupported?(P.tag?`Tag “${P.tag}” is only on the sheet itself`:UNSUP.test(s)?'Sizes and lengths are not in the schema':P.t?'Not something the drawings can show':'No rule matched this question'):`${P.kind==='count'?'Count':P.kind==='extreme'?(P.smallest?'Smallest':'Largest'):P.kind==='unitArea'?'Area · apartments':'Area'} · ${P.why||'rooms'}${P.withSauna?' with a sauna':''}`;
   P.ms=performance.now()-t0;return P;
 }
+const nounA=(A,n)=>A.noun?(n===1?A.noun[0]:A.noun[1]):nounOf(A.P,n);
 function nounOf(P,n){const t=P.t,one=n===1;if(!t)return'';
   if(t.items)return t.items.length>1?(t.items.includes('shower')?(one?'shower or bathtub':'showers and bathtubs'):(one?'sink':'sinks')):KIND[t.items[0]][one?0:1];
   if(t.units)return(one?'apartment':'apartments')+(P.withSauna?' with a sauna':'');
@@ -1124,7 +1131,7 @@ function renderFlab(){const f=FL[ST.fid];if(!f||f.deleted){$('#flab').innerHTML=
   $('#flab').innerHTML=`<button class="nb" data-act="fldn" title="Floor below (↓)" aria-label="Floor below" ${i<=0?'disabled':''}>${I.down}</button><div class="ft"><b>${esc(b.name)} · ${esc(fname(f))}</b><span>${meta}</span></div><button class="nb" data-act="flup" title="Floor above (↑)" aria-label="Floor above" ${i>=b.floors.length-1?'disabled':''}>${I.up}</button>`;}
 function renderVnav(){$('#vnav').innerHTML=`<button class="nb" data-act="zi" title="Zoom in" aria-label="Zoom in">${I.plus}</button><button class="nb" data-act="zo" title="Zoom out" aria-label="Zoom out">${I.minus}</button><button class="nb" data-act="fit" title="Frame the drawing (F)" aria-label="Frame">${I.fit}</button><button class="nb ${ST.trace?'on':''}" data-act="trace" title="Show what Blueline read (R)" aria-label="Show what Blueline read" aria-pressed="${ST.trace}">${I.layers}</button>`;}
 function renderLegend(){const f=FL[ST.fid],el=$('#legend');if(!f||!f.schema){el.hidden=true;return;}const p=activeN(f.id),A=ST.active;let h='';
-  if(p){const tot=A.kind==='count'||A.kind==='area'?A.value:null,isA=A.unit==='m²';h=`<span class="cn"><b>${isA?f1(p.val):p.val}</b>${isA?'m²':esc(nounOf(A.P,p.val))} on this floor${tot!=null&&A.per.length>1?` · ${isA?f1(tot)+' m²':tot} in total`:''}</span><button data-act="clearans">Clear</button>`;}
+  if(p){const tot=A.kind==='count'||A.kind==='area'?A.value:null,isA=A.unit==='m²';h=`<span class="cn"><b>${isA?f1(p.val):p.val}</b>${isA?'m²':esc(nounA(A,p.val))} on this floor${tot!=null&&A.per.length>1?` · ${isA?f1(tot)+' m²':tot} in total`:''}</span><button data-act="clearans">Clear</button>`;}
   else if(ST.trace)h=`<span><i class="lr"></i>Rooms</span><span><i class="li"></i>Doors, windows, fixtures</span><span style="color:var(--fnt)">what Blueline read</span>`;
   else h=`<span style="color:var(--fnt)">Reading layer hidden</span><button data-act="trace">Show</button>`;
   el.innerHTML=h;el.hidden=false;}
@@ -1348,10 +1355,52 @@ function suggestions(){const t=ST.scope.type,units=scopeFloors(ST.scope).some(f=
   return[['How many doors in all buildings?'],['Which floor has the most rooms?'],['How many floors are there?']];}
 function renderAskEmpty(){const ms=$('#msgs');if(ms.querySelector('.ans,.uq'))return;const any=Object.values(FL).some(f=>!f.deleted&&isRead(f));
   ms.innerHTML=`<div class="aempty"><h2>Ask the drawings</h2><p>${any?`Asking about <b>${esc(scopeName(ST.scope))}</b>. Every counted item is marked on its floor.`:'Add floor plans first. Once a floor is read you can ask about it, its building, or all buildings.'}</p><div class="sgl">${suggestions().map(([q,l])=>`<button class="sg" data-q="${esc(q)}" ${any?'':'disabled'}>${esc(q)}${l?`<small>${l}</small>`:''}</button>`).join('')}</div></div>`;}
-function ask(q,scope){q=q.trim();if(!q)return;const ms=$('#msgs');ms.querySelector('.aempty')?.remove();
-  const u=document.createElement('div');u.className='uq';u.textContent=q;ms.appendChild(u);
-  const A=answer(q,scope||ST.scope);ANS[A.n]=A;ST.trN=A.n;const d=document.createElement('div');d.className='ans';d.dataset.n=A.n;ms.appendChild(d);
-  if(A.kind!=='nope')activate(A.n);else{d.innerHTML=ansHTML(A);askServer(A,d);}ms.scrollTop=ms.scrollHeight;if(ST.trOpen)setTrace(null,'answer');}
+async function ask(q,scope){q=q.trim();if(!q)return;const ms=$('#msgs');ms.querySelector('.aempty')?.remove();
+  const u=document.createElement('div');u.className='uq';u.textContent=q;ms.appendChild(u);scope=scope||ST.scope;
+  const P=parseQ(q);let A=null;
+  if(!P.strong||P.unsupported){const wait=document.createElement('div');wait.className='ans';wait.innerHTML='<div class="atext asc">Reading the question…</div>';ms.appendChild(wait);ms.scrollTop=ms.scrollHeight;
+    const pl=await planServer(q);wait.remove();if(pl)A=runPlan(pl.plan,q,scope,pl.meta);}
+  if(!A){A=answer(q,scope);if(A.kind!=='nope'&&!A.P.strong){const rule=A.P.rule;A={...A,kind:'nope',per:[],value:null,text:`I can only read this as “${rule}”, which would ignore “${A.P.extra.join('”, “')}”. Ask it more simply, or the model will plan it once it is connected.`};A.steps=A.steps.filter(x=>x.k==='parse_question'||x.k==='cost');A.steps[0]={...A.steps[0],s:'warn',d:`${rule}, but the question also says “${A.P.extra.join('”, “')}”, which this rule cannot handle`};}}
+  ANS[A.n]=A;ST.trN=A.n;const d=document.createElement('div');d.className='ans';d.dataset.n=A.n;ms.appendChild(d);
+  if(A.kind!=='nope')activate(A.n);else{d.innerHTML=ansHTML(A);if(!A.planned)askServer(A,d);}ms.scrollTop=ms.scrollHeight;if(ST.trOpen)setTrace(null,'answer');}
+/* our model turns the question into a plan (see PLAN_API.md); nothing is answered by the model itself */
+async function planServer(q){await probeP;if(CFG.proto!=='analyze'||CFG.noPlan)return null;
+  const fl=Object.values(FL).filter(f=>!f.deleted&&isRead(f)),voc={itemKinds:Object.keys(KIND),roomTypes:Object.keys(RT),labels:[...new Set(fl.flatMap(f=>f.schema.rooms.map(r=>r.label).filter(Boolean)))].slice(0,200),apartments:[...new Set(fl.flatMap(f=>unitsOf(f.schema)))].slice(0,100),floors:curB().floors.length};
+  const t0=performance.now(),ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),8000);
+  try{const r=await fetch(CFG.endpoint+'/plan',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,vocabulary:voc}),signal:ctl.signal});
+    if(r.status===404||r.status===405){CFG.noPlan=true;return null;}if(!r.ok)return null;const j=await r.json();
+    return j&&j.plan&&(j.plan.find==='item'||j.plan.find==='room')?{plan:j.plan,meta:{ms:performance.now()-t0,modelCalls:j.modelCalls??1,tokens:j.tokens??null}}:null;}
+  catch(e){return null;}finally{clearTimeout(tm);}}
+function runPlan(pl,q,scope0,meta){const t0=performance.now(),A={n:++QN,q,P:{t:{},kind:'count',rule:pl.readAs||'',strong:true},scope:scope0,rv:++RV,per:[],missing:[],steps:[],planned:pl};
+  const S=(k,d,x)=>A.steps.push(Object.assign({k,d,s:'ok'},x||{})),arr=v=>v==null?[]:Array.isArray(v)?v:[v],I=pl.in||{},kinds=arr(pl.kind).map(k=>FIXK[k]||k),types=arr(pl.type),op=pl.do||'count';
+  const where=arr(pl.where).filter(w=>w&&w.field==='area'&&['>','>=','<','<=','='].includes(w.op)&&isFinite(+w.value));
+  let sc=scope0;const b=bld(scope0.type==='floor'?FL[scope0.id].bId:scope0.type==='building'?scope0.id:ST.bId);
+  if(pl.floor!=null&&b){const i=pl.floor==='top'?b.floors.length-1:(+pl.floor)-1;if(b.floors[i])sc={type:'floor',id:b.floors[i]};}else if(pl.scope==='building'&&b)sc={type:'building',id:b.id};else if(pl.scope==='project')sc={type:'project'};
+  A.scope=sc;const fls=scopeFloors(sc),missing=fls.filter(f=>!isRead(f));A.missing=missing.map(f=>f.id);
+  S('parse_question',`Our model read it as: ${pl.readAs||JSON.stringify(pl)}`,{ms:meta.ms});S('select_floors',`${scopeName(sc)}${fls.length>1?` · ${fls.length-missing.length} of ${fls.length} floors read`:''}`,{s:missing.length?'warn':'ok'});
+  const cmp=(a,w)=>w.op==='>'?a>+w.value:w.op==='>='?a>=+w.value:w.op==='<'?a<+w.value:w.op==='<='?a<=+w.value:Math.abs(a-+w.value)<.05;
+  const inRoom=(sc2,r)=>(!arr(I.roomType).length||roomIs(r,arr(I.roomType)))&&(!I.roomLabel||normL(r.label)===normL(I.roomLabel))&&(!I.roomNumber||normNo(r.number)===normNo(I.roomNumber))&&(!I.apartment||aptKey(r.unit)===String(I.apartment).toUpperCase());
+  const isArea=/area/.test(op);A.unit=isArea?'m²':'';
+  A.per=fls.map(f=>{if(!isRead(f))return{fid:f.id,na:true};const sc2=f.schema,x={np:0,nt:0,rows:[]},ev=[];
+    if(pl.find==='item'){const host=new Set(sc2.rooms.filter(r=>inRoom(sc2,r)&&where.every(w=>{const a=roomArea(sc2,r);return a!=null&&cmp(a,w);})).map(r=>r.id)),filt=Object.keys(I).length||where.length;
+      sc2.items.filter(i=>(!kinds.length||kinds.includes(i.kind))&&(!filt||(i.roomIds||[]).some(id=>host.has(id)))).forEach(i=>ev.push({id:i.id,type:'item'}));return{fid:f.id,val:ev.length,ev,x};}
+    let rs=sc2.rooms.filter(r=>(!types.length||roomIs(r,types))&&(!pl.label||normL(r.label)===normL(pl.label))&&inRoom(sc2,r));
+    if(pl.has){const hk=arr(pl.has.kind).map(k=>FIXK[k]||k),mn=+pl.has.min||1;rs=rs.filter(r=>sc2.items.filter(i=>hk.includes(i.kind)&&(i.roomIds||[]).includes(r.id)).length>=mn);}
+    const ar=rs.map(r=>[r,roomArea(sc2,r)]);if(where.length)rs=ar.filter(([,a])=>a!=null&&where.every(w=>cmp(a,w))).map(([r])=>r);
+    if(isArea){let q2=rs.map(r=>[r,roomArea(sc2,r)]);if(q2.some(z=>z[1]==null))return{fid:f.id,val:null,ev:[],noScale:true,x};if(op!=='sum_area'&&q2.length){q2.sort((a,c)=>op==='min_area'?a[1]-c[1]:c[1]-a[1]);q2=[q2[0]];x.room=q2[0][0];}
+      q2.forEach(([r,a])=>{ev.push({id:r.id,type:'room'});x.rows.push([r,a]);if(r.measuredAreaM2!=null||r.printedAreaM2!=null)x.np++;else x.nt++;});return{fid:f.id,val:q2.reduce((s3,z)=>s3+z[1],0),ev,x};}
+    rs.forEach(r=>ev.push({id:r.id,type:'room'}));return{fid:f.id,val:rs.length,ev,x};});
+  A.per.forEach(p=>{const f=FL[p.fid];if(p.na)S('count_items',`${fname(f)}: not read yet`,{s:'warn'});else S(isArea?'sum_area':pl.find==='item'?'count_items':'count_rooms',`${fls.length>1?fname(f)+': ':''}${p.noScale?'no scale or printed areas':isArea?`${f1(p.val)} m² · ${p.x.rows.map(([r,a])=>`${r.label||RT[r.type].fi} ${f1(a)}`).slice(0,6).join(' + ')}`:`${p.val} · ${listIds(p.ev.map(e=>e.id))}`}`);});
+  const ok=A.per.filter(p=>!p.na&&p.val!=null);
+  if(!ok.length){A.kind='nope';A.text=missing.length?'These floors are not read yet.':'There is no scale or printed area here, so I won’t give an area you can’t check.';}
+  else{A.value=ok.reduce((a,p)=>a+p.val,0);A.kind=isArea?'area':'count';
+    if(isArea&&op!=='sum_area'){const best=[...ok].sort((a,c)=>op==='min_area'?a.val-c.val:c.val-a.val)[0],r=best.x.room;A.kind='extreme';A.value=best.val;A.top=best.fid;A.per=A.per.map(p=>p.fid===best.fid?p:{...p,ev:[],dim:true});if(r)A.text=`The ${op==='min_area'?'smallest':'largest'} is ${r.label||RT[r.type].en}${fls.length>1?`, on ${fname(FL[best.fid])}`:''}.`;}
+    const what=pl.find==='item'?(kinds.length===1&&KIND[kinds[0]]?KIND[kinds[0]]:['item','items']):(types.length===1&&RT[types[0]]?[RT[types[0]].en.toLowerCase(),RT[types[0]].pl]:['room','rooms']);A.noun=what;
+    A.pill=missing.length?['chk',`${missing.length} floor${missing.length>1?'s':''} not read`]:['ok','Planned by our model'];A.calc=`${pl.readAs||''}\n= ${isArea?f1(A.value)+' m²':A.value}`;
+    if(ok.length>1&&A.kind!=='extreme')S('sum_floors',`${ok.map(p=>isArea?f1(p.val):p.val).join(' + ')} = ${isArea?f1(A.value)+' m²':A.value}`);
+    S('verify',`${ok.reduce((a,p)=>a+(p.dim?0:p.ev.length),0)} ${pl.find==='item'?'items':'rooms'} marked on the drawing${ok.length>1?'s':''}. The plan only says what to look for; every number comes from what was read.`);}
+  A.ms=performance.now()-t0;S('cost',`${meta.modelCalls} model call${meta.modelCalls===1?'':'s'} to read the question${meta.tokens!=null?`, ${meta.tokens} tokens`:''}; the answer itself is code (${fmtMs(A.ms)}).`,{ms:A.ms});
+  return A;}
 function serverHTML(A){const j=A.server,f=FL[A.serverFid],v=typeof j.answer==='number'?Math.round(j.answer*100)/100:j.answer,pill=j.modelCalls===0?['ok','Measured on the drawing']:j.status==='confident'?['ok','Two methods agree']:['chk','Check this'];
   return`<div class="ahead"><span class="asc">${esc(f?fname(f):'')}</span><span class="pill ${pill[0]}">${esc(pill[1])}</span></div><div class="big"><b>${esc(String(v))}</b><span class="u">${esc(j.unit||'')}</span></div><div class="atext">${esc(j.source||'Answered by our model')} · ${j.modelCalls||0} model call${j.modelCalls===1?'':'s'}, ${j.tokens||0} tokens</div>`
     +(j.methods&&j.methods.length?`<details class="how"><summary>How this was worked out</summary><div class="calc">${esc(j.methods.map(m=>`${m.tool} = ${m.value} · ${m.detail||''}`).join('\n'))}</div></details>`:'')+`<div class="aact"><button class="alink mut" data-act="opentr" data-ans="${A.n}">Every step in the trace</button></div>`;}
@@ -1368,8 +1417,8 @@ const fmtBadge=v=>ST.active&&ST.active.unit==='m²'?Math.round(v):v;
 function ansHTML(A){
   if(A.server)return serverHTML(A);
   if(A.kind==='nope')return`<div class="ahead"><span class="pill no">Can't verify</span></div><div class="atext">${esc(A.text)}</div><div class="aact"><button class="alink mut" data-act="opentr" data-ans="${A.n}">See why in the trace</button></div>`;
-  const isA=A.unit==='m²',on=ST.active&&ST.active.n===A.n;
-  let h=`<div class="ahead"><span class="asc">${esc(scopeName(A.scope))}</span><span class="pill ${A.pill[0]}">${esc(A.pill[1])}</span></div><div class="big"><b>${isA?f1(A.value):A.value}</b><span class="u">${isA?'m²':esc(nounOf(A.P,A.value))}</span></div>`;
+  const isA=A.unit==='m²',on=ST.active&&ST.active.n===A.n,readAs=A.planned?A.planned.readAs:A.P&&A.P.rule;
+  let h=`<div class="ahead"><span class="asc">${esc(scopeName(A.scope))}</span><span class="pill ${A.pill[0]}">${esc(A.pill[1])}</span></div>${readAs?`<div class="asc">Read as: ${esc(readAs)}</div>`:''}<div class="big"><b>${isA?f1(A.value):A.value}</b><span class="u">${isA?'m²':esc(nounA(A,A.value))}</span></div>`;
   if(A.text)h+=`<div class="atext">${esc(A.text)}</div>`;
   if(A.per.length>1){const rows=[...A.per].reverse(),mx=Math.max(1,...rows.filter(p=>!p.na).map(p=>p.val||0));
     h+=`<div class="bars">${rows.map(p=>{const f=FL[p.fid],lbl=(A.scope.type==='project'?f.bId+' · ':'')+fname(f);
@@ -1389,7 +1438,7 @@ function activate(n){const A=ANS[n];if(!A)return;ST.active=A;
 function clearActive(){ST.active=null;refreshAnswerViews();}
 function refreshAnswerViews(){$$('.ans').forEach(el=>{const A=ANS[el.dataset.n];if(A){el.classList.toggle('act',!!ST.active&&ST.active.n===A.n);el.innerHTML=ansHTML(A);}});
   renderList();renderTabs();if(ST.view==='plan'){drawEvidence();renderLegend();}else{pins3D();labels3D();}}
-function rerunAnswers(){const ns=Object.keys(ANS);if(!ns.length)return;ns.forEach(n=>{const o=ANS[n];if(o.server||(o.kind==='nope'&&o.P&&o.P.unsupported))return;const A=answer(o.q,o.scope,{silent:1});A.n=o.n;ANS[n]=A;if(ST.active&&ST.active.n===A.n)ST.active=A;});
+function rerunAnswers(){const ns=Object.keys(ANS);if(!ns.length)return;ns.forEach(n=>{const o=ANS[n];if(o.server||o.planned||(o.kind==='nope'&&o.P&&(o.P.unsupported||!o.P.strong)))return;const A=answer(o.q,o.scope,{silent:1});A.n=o.n;ANS[n]=A;if(ST.active&&ST.active.n===A.n)ST.active=A;});
   refreshAnswerViews();if(ST.trTab==='answer')trSoon();}
 
 /* =====================================================================
@@ -1412,7 +1461,7 @@ const stepName=k=>STEPN[k]||(/^count_items/.test(k)?'Counted':/^count_rooms/.tes
 function stepHTML(s){return`<div class="ts ${s.s||'ok'}"><span class="tdot"></span><code title="${esc(s.k)}">${esc(stepName(s.k))}</code><span class="td">${esc(s.d||'')}</span><span class="tm">${s.s==='run'?fmtMs(performance.now()-s.t0):s.ms!=null?fmtMs(s.ms):''}</span></div>`;}
 function traceAnswerHTML(){const ns=Object.keys(ANS).map(Number),A=ANS[ST.trN]||(ns.length?ANS[Math.max(...ns)]:null);
   if(!A)return`<div class="tempty">Ask a question and every step shows here: how the question was read, which floors were used, each count or area with the items behind it, the check, and what it cost. Answers are plain code over the schema, so asking makes no model calls.</div>`;
-  const val=A.server?`${typeof A.server.answer==='number'?Math.round(A.server.answer*100)/100:A.server.answer} ${A.server.unit||''}`:A.kind==='nope'?'cannot verify':A.unit==='m²'?f1(A.value)+' m²':A.value+' '+nounOf(A.P,A.value);
+  const val=A.server?`${typeof A.server.answer==='number'?Math.round(A.server.answer*100)/100:A.server.answer} ${A.server.unit||''}`:A.kind==='nope'?'cannot verify':A.unit==='m²'?f1(A.value)+' m²':A.value+' '+nounA(A,A.value);
   return`<div class="tq">“${esc(A.q)}” <span class="asc">→ ${esc(val)}</span></div>`+A.steps.map(stepHTML).join('');}
 function traceReadingHTML(){const b=curB(),now=performance.now(),fs=b.floors.map(id=>FL[id]).filter(f=>f.rt);let h='';
   if(fs.length){const T0=Math.min(...fs.map(f=>f.rt.s)),T1=Math.max(...fs.map(f=>f.rt.e||now)),span=Math.max(1,T1-T0),sum=fs.reduce((a,f)=>a+((f.rt.e||now)-f.rt.s),0),tok=fs.reduce((a,f)=>a+(f.usage?f.usage.in+f.usage.out:0),0),done=fs.filter(f=>f.rt.e).length;

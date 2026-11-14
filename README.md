@@ -52,6 +52,15 @@ No image processing. Rooms are filled on a 4 cm grid, touching rooms get a wall 
 
 ## Answers
 
+How a question is handled:
+1. **Fixed rules, only when the rule is the whole question.** Stoa templates and simple questions ("how many doors on this floor") are answered in code at once. If the question adds conditions the rule can't handle (in, with, per, larger than, not, and...), the rule is not used.
+2. **Our model plans the rest** (`POST /plan`, see `PLAN_API.md`): it turns the question into a plan such as "doors, in bedroom rooms, count". The page runs the plan on the schema and marks every item. One small model call; the number itself always comes from what was read.
+3. **Sizes, lengths and tags** go to `POST /ask`.
+4. Otherwise the page says how it would have read the question and does not guess.
+
+Every answer starts with "Read as: …".
+
+
 The question rules follow the team's `answer.py`, so the interface answers the way the team scores:
 - combined items: sinks and washbasins, showers and bathtubs, toilet bowls
 - room types from the printed label first (`KH/WC` is a bathroom, not a WC room), the reader's type as fallback

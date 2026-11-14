@@ -379,7 +379,7 @@ details.how summary:hover{color:var(--ink)}
       <div class="ahd"><h3>Ask about</h3><div class="seg" id="seg"></div></div>
       <div class="msgs" id="msgs"></div>
       <form class="composer" id="comp">
-        <textarea id="q" rows="1" placeholder="Ask a question, in English or Finnish"></textarea>
+        <textarea id="q" rows="1" placeholder="Ask a question about the drawings"></textarea>
         <button class="send" id="send" type="submit" aria-label="Ask"></button>
       </form>
     </aside>
@@ -588,7 +588,8 @@ function drawGeneric(sc){const d=sc.drawing;let s=`<rect class="pg" width="${d.w
 const PROJ={name:'My project',buildings:[{id:'A',name:'Building A',floors:[]}]};
 const FL={};let FN=0;
 const ST={view:'plan',bId:'A',fid:null,scopeMode:'auto',scope:{type:'building',id:'A'},active:null,sel:null,trace:true,trOpen:true,trTab:'reading',trN:0,trRaw:false};
-const CFG={reader:store.get('bl_reader','claude'),endpoint:store.get('bl_endpoint','http://localhost:8000')};
+const CFG={endpoint:(new URLSearchParams(location.search).get('api')||store.get('bl_endpoint','http://localhost:8000')).replace(/\/$/,''),proto:null,probing:true};
+const hostOf=u=>{try{return new URL(u).host;}catch(e){return u;}};
 const bld=id=>PROJ.buildings.find(b=>b.id===id);
 const curB=()=>bld(ST.bId);
 const levelOf=f=>bld(f.bId).floors.indexOf(f.id)+1;
@@ -610,7 +611,7 @@ function putDef(f){ // a hidden <g> per sample or schema-only floor; thumbnails 
 
 /* =====================================================================
    4. Turning uploads into page images. Each image is scaled to at most
-      about 1.1 megapixels, so Claude's pixel coordinates match ours, and a
+      about 1.1 megapixels for the plan view and 3D, and a
       mask of thick lines (walls) is kept for snapping and for 3D walls.
    ===================================================================== */
 function otsu(l){const h=new Array(256).fill(0);for(let i=0;i<l.length;i++)h[l[i]]++;let sum=0;for(let i=0;i<256;i++)sum+=i*h[i];let sB=0,wB=0,best=0,thr=128;
@@ -629,52 +630,23 @@ async function prepDrawable(src,nw,nh,name){
   return{name,W,H,blob,thick,canvas:c,url:URL.createObjectURL(blob),stats:{nw:Math.round(nw),nh:Math.round(nh),thr:t,k:kk,ms:Math.round(performance.now()-tp0)}};
 }
 async function prepFile(file){const url=URL.createObjectURL(file);
-  try{const img=new Image();img.src=url;await img.decode();let nw=img.naturalWidth,nh=img.naturalHeight;if(nw<16||nh<16){nw=1600;nh=1200;}return await prepDrawable(img,nw,nh,file.name);}
+  try{const img=new Image();img.src=url;await img.decode();let nw=img.naturalWidth,nh=img.naturalHeight;if(nw<16||nh<16){nw=1600;nh=1200;}const P=await prepDrawable(img,nw,nh,file.name);P.orig=file;return P;}
   finally{setTimeout(()=>URL.revokeObjectURL(url),1000);}}
 const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/';
 async function pdfPages(file){ // every page of a PDF becomes one floor
   const lib=await import(PDFJS+'pdf.min.mjs');lib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.mjs';
   const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false}).promise,out=[];
-  for(let p=1;p<=Math.min(doc.numPages,12);p++){const pg=await doc.getPage(p),v0=pg.getViewport({scale:1}),s=Math.min(3,2000/Math.max(v0.width,v0.height)),vp=pg.getViewport({scale:s});
+  for(let p=1;p<=Math.min(doc.numPages,12);p++){const pg=await doc.getPage(p),v0=pg.getViewport({scale:1}),s=Math.min(6,(doc.numPages>4?4000:6000)/Math.max(v0.width,v0.height)),vp=pg.getViewport({scale:s});
     const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
     await pg.render({canvasContext:g,viewport:vp}).promise;out.push({name:`${file.name.replace(/\.pdf$/i,'')} p${p}`,canvas:c,page:p,pages:doc.numPages});}
   return out;
 }
 
 /* =====================================================================
-   5. Reading with Claude, the stand-in reader until our model is ready. It runs
-      only inside claude.ai, on the viewer's own Claude account. No API key is
-      used or stored anywhere.
+   5. Reading. Our model reads each floor and returns a schema; everything after
+      that (answers, proof, 3D, trace) is plain code. No API key is kept anywhere.
    ===================================================================== */
-const API_MODEL='claude-sonnet-5-5';
-try{localStorage.removeItem('blueline_api_key');}catch(e){} // earlier versions could keep an API key in this browser; it is deleted on every load
-let SAMPLER=null,CLAUDE_OFF=false;
-const samplerP=(async()=>{try{if(!window.claude||!window.claude.use)return null;const s=await window.claude.use('sample');if(!s)return null;const lim=await s.limits().catch(()=>null);return lim&&lim.images?s:null;}catch(e){return null;}})().then(s=>{SAMPLER=s;renderStatus();return s;});
-const READ_PROMPT=(W,H)=>`You are tracing an architectural floor plan so that every later answer can be checked on the drawing.
-The image is ${W} x ${H} pixels. Give coordinates as integer pixels of THIS image: x from the left edge (0 to ${W}), y from the top edge (0 to ${H}).
-
-Reply with JSON Lines only: one JSON object per line, no other text and no code fences, in this order.
-First line:
-{"t":"meta","title":"short title of the drawing","kind":"floor plan" or "other","storeys":how many separate storey plans are drawn on this sheet (usually 1),"scale":"printed scale such as 1:100, or null","bar":{"p":[x1,y1,x2,y2],"m":metres} or null,"dim":{"p":[x1,y1,x2,y2],"m":metres} or null}
-  bar = the two ends of a graphic scale bar and the length in metres it shows. dim = the two ends of one clearly printed dimension and its length in metres.
-Then one line per room or space:
-{"t":"room","id":"R1","number":"room number as printed, or null","name":"room label as printed","type":"bedroom|living|kitchen|dining|bathroom|wc|sauna|hall|corridor|closet|storage|utility|balcony|office|meeting|stair|technical|other","area":printed area in m2 as a number or null,"apartment":"label of the apartment or unit it belongs to, or null","poly":[[x,y],...]}
-  poly = the floor outline along the inside faces of the walls, clockwise, 4 to 12 corners, straight edges that follow the walls.
-Then one line per door: {"t":"door","id":"D1","b":[x0,y0,x1,y1],"rooms":["R1","R2"]}
-  b = box around the door leaf and its swing. rooms = the rooms it joins, one id for a door to the outside.
-Then one line per window: {"t":"window","id":"W1","b":[x0,y0,x1,y1],"room":"R1"}
-Then one line per toilet, washbasin, kitchen sink, shower, bathtub or sauna stove: {"t":"fix","id":"F1","kind":"toilet|washbasin|kitchen_sink|shower|bathtub|sauna_stove","b":[x0,y0,x1,y1],"room":"R1"}
-Last line: {"t":"end"}
-
-Rules: report only what is drawn and never guess. Keep boxes tight. Count every door leaf and every window; an open doorway without a door leaf is not a door. A double-bowl sink is one sink. Copy room names and numbers exactly as printed. If the image is not a floor plan, reply with the meta line using "kind":"other" and then {"t":"end"} only.`;
-function makeParser(raw,onItem){let done=0;
-  const take=line=>{line=line.trim();if(!line.startsWith('{'))return;let o;try{o=JSON.parse(line);}catch(e){raw.bad=(raw.bad||0)+1;return;}
-    if(o.t==='meta')raw.meta=o;else if(o.t==='room')raw.rooms.push(o);else if(o.t==='door')raw.doors.push(o);else if(o.t==='window')raw.wins.push(o);else if(o.t==='fix')raw.fix.push(o);else return;raw.ok=(raw.ok||0)+1;onItem(o);};
-  const f=text=>{const lines=text.split('\n'),full=lines.length-1;for(;done<full;done++)take(lines[done]);};
-  f.whole=text=>{if(raw.rooms.length)return;let v;try{v=JSON.parse(text.replace(/```[a-z]*\n?/gi,'').trim());}catch(e){return;}
-    const list=Array.isArray(v)?v:v&&typeof v==='object'?[].concat(v.meta?[Object.assign({t:'meta'},v.meta)]:[],...['rooms','doors','windows','fixtures'].map((k,i)=>(v[k]||[]).map(o=>Object.assign({t:['room','door','window','fix'][i]},o)))):[];
-    list.forEach(o=>{if(o&&typeof o==='object')take(JSON.stringify(o));});};
-  return f;}
+try{localStorage.removeItem('blueline_api_key');}catch(e){} // an earlier version could keep an API key in this browser; it is deleted on every load
 const clean=s=>String(s==null?'':s).replace(/[^\p{L}\p{N} .,'’+&\-\/()²]/gu,'').trim().slice(0,40);
 const nbox=b=>Array.isArray(b)&&b.length===4&&b.every(v=>isFinite(+v))?[Math.min(+b[0],+b[2]),Math.min(+b[1],+b[3]),Math.max(+b[0],+b[2]),Math.max(+b[1],+b[3])]:null;
 const inPoly=(p,poly)=>{let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;};
@@ -683,38 +655,8 @@ const edgeD=(p,poly)=>{let m=1e9;for(let i=0;i<poly.length;i++)m=Math.min(m,segD
 function shoelace(p){let a=0;for(let i=0;i<p.length;i++){const[x1,y1]=p[i],[x2,y2]=p[(i+1)%p.length];a+=x1*y2-x2*y1;}return Math.abs(a)/2;}
 function centroid(p){let x=0,y=0;p.forEach(q=>{x+=q[0];y+=q[1];});return[x/p.length,y/p.length];}
 /* snap each straight edge to the nearest inside face of a wall: dark on the wall side, light on the room side */
-function snapPoly(poly,P){const{W,H,thick}=P,R=Math.max(5,Math.round(Math.max(W,H)*.018));
-  const pts=poly.filter((p,i)=>{const q=poly[(i+poly.length-1)%poly.length];return Math.hypot(p[0]-q[0],p[1]-q[1])>2;}),n=pts.length;if(n<3)return poly;
-  const c=pts.reduce((a,p)=>[a[0]+p[0]/n,a[1]+p[1]/n],[0,0]);
-  const fr=(hz,v,a,b)=>{if(v<0||v>=(hz?H:W))return 0;let s=0,m=0;const lo=Math.max(0,Math.round(a)),hi=Math.min((hz?W:H)-1,Math.round(b));for(let u=lo;u<=hi;u++){s+=hz?thick[v*W+u]:thick[u*W+v];m++;}return m?s/m:0;};
-  const L=pts.map((a,i)=>{const b=pts[(i+1)%n],dx=b[0]-a[0],dy=b[1]-a[1],hz=Math.abs(dy)<=Math.abs(dx)*.2,vt=Math.abs(dx)<=Math.abs(dy)*.2;if(!hz&&!vt)return null;
-    const v0=Math.round(hz?(a[1]+b[1])/2:(a[0]+b[0])/2),lo=Math.min(hz?a[0]:a[1],hz?b[0]:b[1]),hi=Math.max(hz?a[0]:a[1],hz?b[0]:b[1]),m=(hi-lo)*.15,s=(hz?c[1]:c[0])>v0?1:-1;
-    let best=v0,bs=.25;for(let v=v0-R;v<=v0+R;v++){const sc=fr(hz,v-s,lo+m,hi-m)-fr(hz,v+s,lo+m,hi-m)-Math.abs(v-v0)*.004;if(sc>bs){bs=sc;best=v;}}
-    return{hz,v:best};});
-  return pts.map((p,i)=>{let x=p[0],y=p[1];[L[(i+n-1)%n],L[i]].forEach(e=>{if(e){if(e.hz)y=e.v;else x=e.v;}});return[x,y];});}
-function toSchema(raw,P,f){ // Claude's lines -> the Blueline contract, in page-image pixels
-  const W=P.W,H=P.H,cl=p=>[clamp(Math.round(+p[0]||0),0,W),clamp(Math.round(+p[1]||0),0,H)];
-  let snapped=0,shift=0;
-  const rs=raw.rooms.filter(r=>Array.isArray(r.poly)&&r.poly.length>=3).map(r=>{const p0=r.poly.map(cl),p1=snapPoly(p0,P),a0=shoelace(p0),a1=shoelace(p1),use=a0>0&&a1>a0*.5&&a1<a0*2&&p1.length===p0.length;
-    if(use){const d=p0.reduce((a,q,i)=>a+Math.hypot(q[0]-p1[i][0],q[1]-p1[i][1]),0)/p0.length;if(d>.4){snapped++;shift+=d;}}return{r,poly:use?p1:p0};}).filter(x=>shoelace(x.poly)>16);
-  let mpp=null,est=false,method='none',note='';
-  const pr=rs.filter(x=>+x.r.area>0).map(x=>Math.sqrt(+x.r.area/shoelace(x.poly))).sort((a,b)=>a-b);
-  if(pr.length){mpp=pr[pr.length>>1];method='printed areas';note=`Median of ${pr.length} printed room area${pr.length>1?'s':''} against their traced outlines${pr.length>1?` (range ${(pr[0]*100).toFixed(2)} to ${(pr[pr.length-1]*100).toFixed(2)} cm per px)`:''}`;}
-  else{const m=raw.meta||{},ok=q=>q&&Array.isArray(q.p)&&q.p.length===4&&+q.m>0,seg=ok(m.bar)?m.bar:ok(m.dim)?m.dim:null;
-    if(seg){const L=Math.hypot(seg.p[2]-seg.p[0],seg.p[3]-seg.p[1]);if(L>8){mpp=+seg.m/L;method=seg===m.bar?'scale bar':'printed dimension';note=`${seg===m.bar?'Scale bar':'Printed dimension'}: ${seg.m} m = ${Math.round(L)} px`;}}
-    if(!mpp){const ds=raw.doors.map(d=>nbox(d.b)).filter(Boolean).map(b=>Math.max(b[2]-b[0],b[3]-b[1])).filter(v=>v>3).sort((a,b)=>a-b);if(ds.length>=2){mpp=.9/ds[ds.length>>1];est=true;method='door widths';note=`Estimated from ${ds.length} doors, assuming a typical door is 0.9 m wide (rough)`;}}}
-  const idm={},rooms=rs.map((x,i)=>{const r=x.r,t=TYPEMAP[String(r.type||'').toLowerCase()]||typeFromLabel(r.name)||'Room',id='R'+(i+1);if(r.id!=null)idm[r.id]=id;return{id,type:t,label:clean(r.name)||RT[t].fi,number:clean(r.number)||null,unit:clean(r.apartment)||null,polygon:x.poly,printedAreaM2:+r.area>0?+r.area:null,conf:1};});
-  const near=(b,k)=>{const c=[(b[0]+b[2])/2,(b[1]+b[3])/2],tol=Math.max(b[2]-b[0],b[3]-b[1])*.8+4;return rooms.map(r=>({id:r.id,d:inPoly(c,r.polygon)?0:edgeD(c,r.polygon)})).filter(h=>h.d<=tol).sort((a,b)=>a.d-b.d).slice(0,k).map(h=>h.id);};
-  const items=[];let nD=0,nW=0,nF=0,lg=0,ln=0;
-  raw.doors.forEach(d=>{const b=nbox(d.b);if(!b)return;let rids=[...new Set((Array.isArray(d.rooms)?d.rooms:[]).map(v=>idm[v]).filter(Boolean))].slice(0,2);if(!rids.length){rids=near(b,2);ln++;}else lg++;items.push({id:'D'+(++nD),kind:'door',box:b,roomIds:rids,conf:1});});
-  raw.wins.forEach(w=>{const b=nbox(w.b);if(!b)return;items.push({id:'W'+(++nW),kind:'window',box:b,roomIds:[idm[w.room]||near(b,1)[0]].filter(Boolean),conf:1});});
-  raw.fix.forEach(x=>{const b=nbox(x.b);if(!b)return;items.push({id:'F'+(++nF),kind:FIXK[String(x.kind||'').toLowerCase()]||'other',box:b,roomIds:[idm[x.room]||near(b,1)[0]].filter(Boolean),conf:1});});
-  return{drawing:{id:f.id,file:P.name,width:W,height:H,metersPerPixel:mpp,scale:{method,text:raw.meta&&raw.meta.scale||null,estimated:est},title:raw.meta&&clean(raw.meta.title)||null,storeys:clamp(Math.round(+(raw.meta&&raw.meta.storeys)||1),1,6)},
-    rooms,items,walls:[],texts:[],meta:{source:'claude',version:API_MODEL},_stats:{snapped,shift:snapped?shift/snapped:0,scaleNote:note,lines:raw.ok||0,bad:raw.bad||0,lg,ln,dropped:raw.rooms.length-rooms.length}};
-}
-const ERRS={cancelled:['Stopped.','stopped'],not_granted:['Claude was not allowed for this page.','not allowed'],sampling_disabled:['Claude is not available for this account here.','not available'],capability_disabled:['Claude cannot read images in this view.','no images'],images_unavailable:['Claude cannot read images in this view.','no images'],not_declared:['Claude cannot read images in this view.','no images'],capability_removed:['Claude cannot read images in this view.','no images'],rate_limited:['Claude is busy or a usage limit is reached. Try again in a little while.','busy'],session_expired:['Sign in to Claude again, then try again.','signed out'],image_rejected:['Claude could not take this image. Try a PNG or JPG under 20 MB.','image refused'],refused:['Claude declined to read this image.','declined'],empty_completion:['Claude did not return a reading. Try again.','no reading'],network:['Could not reach the Anthropic API from here.','offline'],not_plan:['This does not look like a floor plan.','not a plan'],no_rooms:['Claude found no rooms. Try a clearer floor plan.','no rooms'],nofile:['There is no image to send for this floor.','no image']};
-const errInfo=e=>e&&e.code==='api_error'?['Error: '+String(e.message||'error').slice(0,140),'API error']:(e&&ERRS[e.code])||['Something went wrong while reading. Try again.','error'];
-const HARD=/not_granted|sampling_disabled|disabled|unavailable|not_declared|removed/;
+const ERRS={cancelled:['Stopped.','stopped'],nofile:['There is no image to send for this floor.','no image']};
+const errInfo=e=>e&&e.code==='offline'?[String(e.message),'model offline']:e&&e.code==='api_error'?['Error: '+String(e.message||'error').slice(0,160),'model error']:(e&&ERRS[e.code])||['Something went wrong while reading. Try again.','error'];
 
 /* ---------- other readers + the reading queue (one floor at a time) ---------- */
 function validateSchema(s){const e=[];if(!s||typeof s!=='object')return['not an object'];const d=s.drawing;if(!d||!(d.width>0)||!(d.height>0))e.push('drawing.width/height missing');
@@ -754,16 +696,19 @@ function fromTeamScene(scene,f){const[W,H]=f.img?[f.img.W,f.img.H]:[PW,PH],sx=W/
 
 /* ---------- the reading pool: several floors are read at the same time ---------- */
 const RQ=[];let RQrun=0,POOLCAP=0;
-function poolSize(){const n=CFG.reader==='api'?3:2;return POOLCAP?Math.min(POOLCAP,n):n;}
+const probeP=(async()=>{try{if(window.claude)return; // claude.ai cannot call other servers
+  const qs=new URLSearchParams(location.search).get('api'),cands=[...new Set([qs,/^https?:$/.test(location.protocol)?location.origin:null,CFG.endpoint].filter(Boolean).map(u=>u.replace(/\/$/,'')))];
+  for(const ep of cands){const pr=await probeModel(ep);if(pr){CFG.endpoint=ep;CFG.proto=pr;store.set('bl_endpoint',ep);if(ep===location.origin)toast('Connected to our model on this server.');return;}}}
+  finally{CFG.probing=false;renderStatus();}})();
+function poolSize(){return POOLCAP?Math.min(POOLCAP,3):3;}
 function queueRead(f){if(!f||f.deleted)return;if(!RQ.includes(f.id))RQ.push(f.id);f.status='queued';f.err=null;f.steps=[];f.rawTail=[];f.rt=null;f.usage=null;patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();pump();}
 function pump(){while(RQrun<poolSize()&&RQ.length){const f=FL[RQ.shift()];if(!f||f.deleted||f.status!=='queued')continue;RQrun++;readFloor(f).catch(e=>{console.warn(e);failRead(f,e);}).finally(()=>{RQrun--;pump();});}renderStatus();}
-samplerP.then(()=>pump());
 function rstep(f,k,s,d,o){let st=f.steps.find(x=>x.k===k);if(!st){st={k,t0:performance.now()};f.steps.push(st);}st.s=s;if(d!=null)st.d=d;if(o)Object.assign(st,o);if(s!=='run'&&st.ms==null)st.ms=performance.now()-st.t0;trSoon();return st;}
 function startRead(f){f.status='reading';f.t0=performance.now();f.rt={s:f.t0,e:0};f.live={n:0,rooms:0,doors:0,wins:0,fix:0};f.trace=[];f.rawTail=[];f.steps=[];inputSteps(f);patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();}
 function inputSteps(f){const P=f.img,m=f.meta||{};
-  if(f.src==='sample'){rstep(f,'load_sample','ok','A generated sample floor. It stands in for a reading, so no model is called. Upload a real plan to watch Claude read it.',{ms:0});return;}
+  if(f.src==='sample'){rstep(f,'load_sample','ok','A generated sample floor. It stands in for a reading, so no model is called. Upload a real plan to watch our model read it.',{ms:0});return;}
   if(m.name)rstep(f,'load_file','ok',`${m.name}${m.page?` · page ${m.page} of ${m.pages}`:''}${m.bytes?` · ${fmtBytes(m.bytes)}`:''}${P&&P.stats?` · ${P.stats.nw} × ${P.stats.nh} px`:''}`,{ms:0});
-  if(P&&P.stats)rstep(f,'prepare_image','ok',`Scaled to ${P.W} × ${P.H} px (${(P.W*P.H/1e6).toFixed(2)} MP) so the model's pixel coordinates match ours. Wall mask kept for snapping: Otsu threshold ${P.stats.thr}, ${P.stats.k} px opening.`,{ms:P.stats.ms});}
+  if(P&&P.stats)rstep(f,'prepare_image','ok',`The original ${P.stats.nw} × ${P.stats.nh} px goes to the model; a ${P.W} × ${P.H} px copy is used for the plan view and 3D.`,{ms:P.stats.ms});}
 function schemaSteps(f){const sc=f.schema,S=sc._stats||{},sm=sc.drawing.scale||{},mpp=sc.drawing.metersPerPixel;
   if(S.lines!=null){rstep(f,'parse_lines',S.bad?'warn':'ok',`${S.lines} line${S.lines===1?'':'s'} parsed${S.bad?`, ${S.bad} unreadable and skipped`:''}${S.dropped?`, ${S.dropped} room outline${S.dropped>1?'s':''} too small or broken, dropped`:''}.`);
     rstep(f,'snap_outlines','ok',sc.rooms.length?`${S.snapped} of ${sc.rooms.length} room outlines moved onto the wall faces in the image (mean shift ${(S.shift||0).toFixed(1)} px); the rest already matched.`:'No rooms to snap.');}
@@ -771,65 +716,46 @@ function schemaSteps(f){const sc=f.schema,S=sc._stats||{},sm=sc.drawing.scale||{
   const nd=sc.items.filter(i=>i.kind==='door').length;
   rstep(f,'link_items','ok',`${sc.rooms.length} rooms, ${sc.items.length} items placed in rooms${S.lines!=null?`; of ${nd} door${nd===1?'':'s'}, ${S.lg||0} joined to rooms by the model and ${S.ln||0} by nearest room`:''}.`);}
 async function readFloor(f){
+  f.via=f.src==='sample'?'Loading the sample':f.schemaJson?'Loading the schema file':'Our model is reading';
   if(f.src==='sample'){startRead(f);f.t0=0;await sleep(160+Math.random()*260);if(f.deleted)return;f.schema=JSON.parse(JSON.stringify(f.sample));return finishRead(f,'Sample');}
   if(f.schemaJson){startRead(f);await sleep(60);const s0=JSON.parse(JSON.stringify(f.schemaJson)),team=isTeamSchematic(s0),s=team?fromTeamSchematic(s0):s0,er=validateSchema(s);
     if(!er.length){if(f.img){if(team&&f.img.stats){s.drawing.width=f.img.stats.nw;s.drawing.height=f.img.stats.nh;}rescaleSchema(s,f.img);}f.schema=s;if(!f.img)putDef(f);
       rstep(f,'load_schema','ok',`${team?'Team schematic converted':'schema.json checked against the contract'}: ${s.rooms.length} rooms, ${s.items.length} items${s.drawing.metersPerPixel?`, ${fmtScale(s.drawing.metersPerPixel)}`:', no scale'}. No model call.`);schemaSteps(f);return finishRead(f,team?'Team schematic':'schema.json');}
     if(!f.img)return failRead(f,{code:'api_error',message:'schema.json did not match the contract ('+er[0]+')'});}
-  if(CFG.reader==='api')return readApi(f);
-  return readClaude(f);
+  return readApi(f);
 }
-async function readClaude(f){
-  const sampler=await samplerP,useS=!!sampler&&!CLAUDE_OFF;
-  if(!useS){f.status='nokey';f.err='The Claude stand-in only runs inside claude.ai, on your Claude account. Here, choose "Our model" in Settings, or drop each plan with its schema JSON.';patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();return;}
-  startRead(f);
-  const raw={meta:null,rooms:[],doors:[],wins:[],fix:[]},P=f.img,prompt=READ_PROMPT(P.W,P.H),usage={},via='your claude.ai account';
-  const st=rstep(f,'claude.read_plan','run',`${API_MODEL} · effort low · ${via} · sending the image and the tracing prompt…`);
-  const live=w=>{const L=f.live;st.d=`${API_MODEL} · effort low · ${via} · ${w}: ${L.rooms} room${L.rooms===1?'':'s'}, ${L.doors} door${L.doors===1?'':'s'}, ${L.wins} window${L.wins===1?'':'s'}, ${L.fix} fixture${L.fix===1?'':'s'}`;};
-  const parse=makeParser(raw,o=>{if(f.deleted)return;const L=f.live;L.n++;if(o.t==='room')L.rooms++;else if(o.t==='door')L.doors++;else if(o.t==='window')L.wins++;else if(o.t==='fix')L.fix++;if(o.t!=='meta'){f.trace.push(o);addLive(f,o);}
-    f.rawTail.push(JSON.stringify(o).slice(0,160));if(f.rawTail.length>6)f.rawTail.shift();live('streaming JSON lines');patchSoon(f);trSoon();});
-  const ctl=new AbortController();f.ctl=ctl;patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderReadBan();
-  try{const text=(await sampler(prompt,{images:[P.blob],signal:ctl.signal,effort:'low',onText:({text})=>parse(text)})).text;
-    if(f.deleted)return;parse(text+'\n');parse.whole(text);
-    const measured=usage.in!=null,tin=measured?usage.in:Math.round(P.W*P.H/750+prompt.length/3.6),tout=usage.out!=null?usage.out:Math.round(text.length/3.6);f.usage={in:tin,out:tout,measured};
-    live('read');rstep(f,'claude.read_plan','ok',`${st.d} · ${fmtTok(tin)} tokens in, ${fmtTok(tout)} out ${measured?'(measured)':'(estimated)'}`);
-    if(!raw.rooms.length)throw{code:raw.meta&&raw.meta.kind==='other'?'not_plan':'no_rooms'};
-    f.schema=toSchema(raw,P,f);f.ctl=null;schemaSteps(f);finishRead(f,'Claude');}
-  catch(e){f.ctl=null;
-    if(e&&e.code==='rate_limited')POOLCAP=1; // busy: read one floor at a time from now on, never retry in a loop
-    if(useS&&e&&HARD.test(e.code||''))CLAUDE_OFF=true;
-    const s2=f.steps.find(x=>x.k==='claude.read_plan');if(s2&&s2.s==='run')rstep(f,'claude.read_plan','err',errInfo(e)[0]);
-    failRead(f,e);}
-}
-/* our own model: the team server (POST /api/plan, GET /api/scene), or any server with /analyze -> schema.json */
-async function readApi(f){startRead(f);f.live=null;const ctl=new AbortController();f.ctl=ctl;patchCard(f);const ep=CFG.endpoint.replace(/\/$/,'');
-  try{const blob=f.img?f.img.blob:f.sample?await samplePng(f):null;if(!blob)throw{code:'nofile'};
+/* our model: the team server (POST /api/plan, GET /api/scene), or any server with /analyze returning a schema */
+async function readApi(f){startRead(f);f.live=null;const ctl=new AbortController();f.ctl=ctl;patchCard(f);
+  try{await probeP;const ep=CFG.endpoint.replace(/\/$/,''),blob=f.img?await origBlob(f.img):f.sample?await samplePng(f):null;if(!blob)throw{code:'nofile'};
+    if(CFG.proto==='analyze')return await readAnalyze(f,ep,blob,ctl);
     rstep(f,'model.upload','run',`POST ${ep}/api/plan · ${fmtBytes(blob.size)}`);
     let res;try{res=await fetch(ep+'/api/plan',{method:'POST',body:blob,headers:{'X-Filename':(f.file||'plan').replace(/[^\w.\- ]/g,'_')+'.png'},signal:ctl.signal});}
-    catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'api_error',message:window.claude?'claude.ai does not let this page call other servers. Download the page and open it locally.':`could not reach ${ep}. Is it running, with CORS allowed?`};}
-    if(res.status===404){rstep(f,'model.upload','warn','No /api/plan on this server. Trying the schema contract (/analyze).');return await readAnalyze(f,ep,blob,ctl);}
+    catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'offline',message:window.claude?`claude.ai blocks this page from calling ${ep}. Open Blueline from the model server instead (copy index.html into its web/ folder).`:`Can't reach our model at ${ep}. Is the server running? If this page is not served by it, the server must allow CORS.`};}
+    if(res.status===404||res.status===405){rstep(f,'model.upload','warn','No /api/plan on this server, so it reads through /analyze.');CFG.proto='analyze';return await readAnalyze(f,ep,blob,ctl);}
     if(!res.ok)throw{code:'api_error',message:`${ep}/api/plan answered ${res.status}`};
     const pl=await res.json();rstep(f,'model.upload','ok',`plan ${pl.id} · ${pl.width} × ${pl.height} px · text from ${pl.text_source||'?'} (${pl.n_text||0} lines) · ${pl.seconds} s on the server`);
     rstep(f,'model.scene','run',`GET /api/scene?id=${pl.id}`);
     const r2=await fetch(ep+'/api/scene?id='+encodeURIComponent(pl.id),{signal:ctl.signal});if(!r2.ok)throw{code:'api_error',message:`/api/scene answered ${r2.status}`};
     const scene=await r2.json(),n=k=>(scene.elements||[]).filter(e=>e.kind===k).length;
     rstep(f,'model.scene','ok',`${n('wall')} walls, ${n('door')} doors, ${n('window')} windows, ${n('room')} rooms · ${(+scene.px_per_m).toFixed(1)} px per m, from the wall thickness · ${scene.object_detector||'detector'}`);
-    f.schema=fromTeamScene(scene,f);f.ctl=null;if(!f.img&&!f.sample)putDef(f);schemaSteps(f);finishRead(f,'Team model');}
+    f.schema=fromTeamScene(scene,f);f.ctl=null;if(!f.img&&!f.sample)putDef(f);schemaSteps(f);finishRead(f,'our model');}
   catch(e){f.ctl=null;const st=f.steps.find(x=>x.s==='run');if(st)rstep(f,st.k,'err',errInfo(e)[0]);failRead(f,e);}}
 async function readAnalyze(f,ep,blob,ctl){const fd=new FormData();fd.append('file',blob,f.file||'sheet.png');fd.append('sheet',JSON.stringify({id:f.id,building:f.bId,level:levelOf(f)}));
   rstep(f,'model.analyze','run',`POST ${ep}/analyze`);
-  let res;try{res=await fetch(ep+'/analyze',{method:'POST',body:fd,signal:ctl.signal});}catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'api_error',message:'could not reach '+ep};}
+  let res;try{res=await fetch(ep+'/analyze',{method:'POST',body:fd,signal:ctl.signal});}catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'offline',message:`Can't reach our model at ${ep}.`};}
   if(!res.ok)throw{code:'api_error',message:'the API answered '+res.status};
-  const js=await res.json(),s=js.schema||js,er=validateSchema(s);if(er.length)throw{code:'api_error',message:'schema did not match: '+er[0]};
-  if(f.img)rescaleSchema(s,f.img);rstep(f,'model.analyze','ok',`schema.json: ${s.rooms.length} rooms, ${s.items.length} items`);
-  f.schema=s;f.ctl=null;if(!f.img&&!f.sample)putDef(f);schemaSteps(f);finishRead(f,'Model API');}
+  const js=await res.json(),raw=js.schema||js,team=isTeamSchematic(raw),s=team?fromTeamSchematic(raw):raw,er=validateSchema(s);if(er.length)throw{code:'api_error',message:'schema did not match: '+er[0]};
+  if(f.img){if(team&&f.img.stats){s.drawing.width=f.img.stats.nw;s.drawing.height=f.img.stats.nh;}rescaleSchema(s,f.img);}
+  const nm=s.rooms.filter(r=>r.measuredAreaM2!=null).length,tg=(s.texts||[]).reduce((a,t)=>a+((t&&t.tags)||[]).length,0),M=s.meta||{};
+  rstep(f,'model.analyze','ok',`schema: ${s.rooms.length} rooms${nm?` (${nm} with an area measured on the drawing)`:''}, ${s.items.length} items${tg?`, ${tg} tagged texts`:''}${M.msRead?` · ${fmtMs(+M.msRead)} on the server`:''}${M.modelCalls!=null?` · ${M.modelCalls} model calls`:''}${M.source?` · ${M.source}`:''}`);
+  f.schema=s;f.ctl=null;if(!f.img&&!f.sample)putDef(f);schemaSteps(f);finishRead(f,'our model');}
 function finishRead(f,by){if(f.deleted)return;f.status='read';f.readBy=by;f.err=null;f.errShort='';f.v++;f.justRead=true;if(f.rt)f.rt.e=performance.now();if(!f.sample)f._simg=null;
   patchCard(f);if(f.id===ST.fid&&ST.view==='plan'){if(VB[f.id]&&VB[f.id].auto)delete VB[f.id];renderPlan();}sync3D();rerunAnswers();renderStatus();renderAskEmpty();trSoon();}
 function failRead(f,e){if(f.deleted)return;const[msg,short]=errInfo(e);if(f.rt&&!f.rt.e)f.rt.e=performance.now();
   if(e&&e.code==='cancelled'){f.status='idle';f.err='Stopped. Read it again when you are ready.';f.errShort='stopped';}
-  else if(CLAUDE_OFF&&CFG.reader==='claude'){f.status='nokey';f.err=msg+' Choose "Our model" in Settings, or drop schema files.';f.errShort=short;}
   else{f.status='error';f.err=msg;f.errShort=short;}
   patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();}
+async function origBlob(P){if(P.orig)return P.orig;if(P.origCanvas){if(!P._ob)P._ob=await new Promise(r=>P.origCanvas.toBlob(r,'image/png'));return P._ob;}return P.blob;}
 async function samplePng(f){const img=await svgImage(f);const c=document.createElement('canvas');c.width=PW;c.height=PH;c.getContext('2d').drawImage(img,0,0);return new Promise(r=>c.toBlob(r,'image/png'));}
 function svgImage(f){if(!f.sample&&!f.schema)return Promise.reject(new Error('nothing to draw'));
   if(!f._simg)f._simg=(async()=>{const inner=f.sample?drawSample(f.sample):drawGeneric(f.schema),[W,H]=dims(f);
@@ -876,7 +802,7 @@ const TARGETS=[
   {re:/lifts?\b|elevators?|hissi/,t:{rooms:['Lift']},why:'lifts'},
   {re:/\brooms?\b|huonei|huonett|\btiloja\b|\bspaces?\b|räume|pièces|locali/,t:{allRooms:true},why:'rooms'},
 ];
-const UNSUP=/\b(height|korkeus|volume|tilavuus|materials?|materiaali|price|cost to build|hinta|year|vuosi|fire|palo|insulation|eriste|thickness|paksuus|who|architect|arkkitehti|ceiling|katto)\b|huonekorkeu/;
+const UNSUP=/\b(height|korkeus|volume|tilavuus|materials?|materiaali|price|cost to build|hinta|year|vuosi|fire|palo|insulation|eriste|thickness|paksuus|who|architect|arkkitehti|ceiling|katto|wide|width|long|length|distance|dimensions?|how far|leveys|leveä|pituus|pitkä|etäisyys|mitat?)\b|huonekorkeu/; // the schema has no sizes or lengths: our model's /ask answers these from the sheet
 const QUOTE_RE=/[«“„"'‘]\s*(.+?)\s*[»”“"'’](?=\s*(?:\)|,|are\b|is\b|y a\b|ci sono|gibt|sind|on\b|in\b|im\b|à\b|en\b|op\b|på\b|korrusel|na\b|\?|$))/i;
 const quoted=raw=>{const m=String(raw).match(QUOTE_RE);return m?m[1]:null;};
 const APT_RE=/(?:[Aa]partment|[Ww]ohnung|[Aa]ppartement|[Aa]ppartamento|[Aa]sunto|[Aa]sunnon|[Ff]lat|[Uu]nit)\s+([A-Z0-9]{1,4}|[a-z](?=[\s?,.]|$))(?!\w)/;
@@ -907,9 +833,10 @@ function parseQ(raw){
   else for(const T of TARGETS){const mm=T.re.exec(s);if(mm){P.t=T.t;P.hit=mm[0];P.why=T.why;break;}}
   if(P.t&&P.t.units&&/sauna/.test(s))P.withSauna=true;
   if(!P.t&&(P.area||P.largest||P.smallest)){P.t={allRooms:true};P.why='rooms';}
-  P.unsupported=!P.t||(UNSUP.test(s)&&!P.area);
+  P.tag=(raw.match(/\b[A-Z]{1,5}-\d{1,4}[A-Z]?\b/)||[])[0]||null; // tagged objects such as PS-12 live in the sheet's text, not in the schema
+  P.unsupported=!P.t||!!P.tag||(UNSUP.test(s)&&!P.area);
   if(P.kind==='count'&&P.t&&!P.t.floors&&!P.t.label)P.kind=P.area||P.largest||P.smallest?(P.t.units?'unitArea':(P.largest||P.smallest)?'extreme':'area'):'count';
-  if(!P.rule)P.rule=P.unsupported?(P.t?'Not something the drawings can show':'No rule matched this question'):`${P.kind==='count'?'Count':P.kind==='extreme'?(P.smallest?'Smallest':'Largest'):P.kind==='unitArea'?'Area · apartments':'Area'} · ${P.why||'rooms'}${P.withSauna?' with a sauna':''}`;
+  if(!P.rule)P.rule=P.unsupported?(P.tag?`Tag “${P.tag}” is only on the sheet itself`:UNSUP.test(s)?'Sizes and lengths are not in the schema':P.t?'Not something the drawings can show':'No rule matched this question'):`${P.kind==='count'?'Count':P.kind==='extreme'?(P.smallest?'Smallest':'Largest'):P.kind==='unitArea'?'Area · apartments':'Area'} · ${P.why||'rooms'}${P.withSauna?' with a sauna':''}`;
   P.ms=performance.now()-t0;return P;
 }
 function nounOf(P,n){const t=P.t,one=n===1;if(!t)return'';
@@ -918,11 +845,11 @@ function nounOf(P,n){const t=P.t,one=n===1;if(!t)return'';
   if(t.label)return`${one?'room':'rooms'} labelled “${t.label}”`;
   if(t.floors)return P.sheet?(one?'storey':'storeys'):(one?'floor':'floors');if(t.allRooms)return one?'room':'rooms';if(t.area)return'm²';
   const r=RT[t.rooms[0]];return one?r.en.toLowerCase():r.pl;}
-const roomArea=(sc,r)=>r.printedAreaM2!=null?+r.printedAreaM2:sc.drawing.metersPerPixel?shoelace(r.polygon)*sc.drawing.metersPerPixel**2:null;
+const roomArea=(sc,r)=>r.measuredAreaM2!=null?+r.measuredAreaM2:r.printedAreaM2!=null?+r.printedAreaM2:sc.drawing.metersPerPixel?shoelace(r.polygon)*sc.drawing.metersPerPixel**2:null;
 const unitsOf=sc=>{const u=[...new Set(sc.rooms.filter(r=>r.unit).map(r=>r.unit))];return u.length?u:(sc.apartments||[]);};
 function evalSheet(sc,P){
   const t=P.t,ev=[],x={np:0,nt:0,rows:[]};let val=0;
-  const tally=rs=>rs.forEach(([r,a])=>{val+=a;ev.push({id:r.id,type:'room'});if(r.printedAreaM2!=null)x.np++;else x.nt++;x.rows.push([r,a]);});
+  const tally=rs=>rs.forEach(([r,a])=>{val+=a;ev.push({id:r.id,type:'room'});if(r.measuredAreaM2!=null||r.printedAreaM2!=null)x.np++;else x.nt++;x.rows.push([r,a]);});
   const measure=rs=>{const q=rs.map(r=>[r,roomArea(sc,r)]),miss=q.filter(z=>z[1]==null).length;if(miss)return{val:null,ev:[],noScale:true,x:{...x,miss,of:rs.length}};tally(q);return{val,ev,x};};
   const numbered=sc.rooms.some(r=>r.number);
   if(P.kind==='roomNo'){let hit=sc.rooms.filter(r=>r.number&&normNo(r.number)===normNo(P.no));
@@ -959,12 +886,12 @@ function perDetail(P,sc,p){
   if(P.kind==='count'){if(P.t.items)return`${p.val} · ${listIds(p.ev.map(e=>e.id))}`;if(P.t.units)return`${p.val} · ${(p.x.units||[]).join(', ')||'none'}`;
     const rs=p.ev.map(e=>sc.rooms.find(r=>r.id===e.id)).filter(Boolean);return`${p.val}${rs.length?' · '+rs.slice(0,8).map(r=>`${r.label||RT[r.type].fi} (${r.id})`).join(', ')+(rs.length>8?` and ${rs.length-8} more`:''):''}`;}
   const rows=(p.x&&p.x.rows)||[];if(!rows.length)return'0 m² · no matching rooms';
-  return`${rows.slice(0,6).map(([r,a])=>`${r.number?r.number+' ':''}${r.label||RT[r.type].fi} ${f1(a)} ${r.printedAreaM2!=null?'printed':'traced'}`).join(' + ')}${rows.length>6?` + ${rows.length-6} more`:''} = ${f1(p.val)} m²`;}
+  return`${rows.slice(0,6).map(([r,a])=>`${r.number?r.number+' ':''}${r.label||RT[r.type].fi} ${f1(a)} ${r.measuredAreaM2!=null?'measured':r.printedAreaM2!=null?'printed':'traced'}`).join(' + ')}${rows.length>6?` + ${rows.length-6} more`:''} = ${f1(p.val)} m²`;}
 function verifyText(A,P,ok){const isA=A.unit==='m²',n=ok.reduce((a,p)=>a+(p.dim?0:p.ev.length),0);
   if(!isA){const it=P.t.items;return`${n} ${it?'item':'room'}${n===1?'':'s'} marked on ${ok.length>1?ok.length+' drawings':'the drawing'}${it?'; each has a number you can click to zoom to it':''}.`;}
-  let np=0,nt=0;const dif=[];ok.forEach(p=>{if(p.dim)return;const sc=FL[p.fid].schema,mpp=sc.drawing.metersPerPixel;(p.x.rows||[]).forEach(([r])=>{if(r.printedAreaM2!=null){np++;if(mpp){const tr=shoelace(r.polygon)*mpp*mpp;if(r.printedAreaM2>0)dif.push(Math.abs(tr-r.printedAreaM2)/r.printedAreaM2);}}else nt++;});});
+  let np=0,nt=0;const dif=[];ok.forEach(p=>{if(p.dim)return;const sc=FL[p.fid].schema,mpp=sc.drawing.metersPerPixel;(p.x.rows||[]).forEach(([r])=>{if(r.measuredAreaM2!=null||r.printedAreaM2!=null){np++;if(mpp&&r.printedAreaM2!=null){const tr=shoelace(r.polygon)*mpp*mpp;if(r.printedAreaM2>0)dif.push(Math.abs(tr-r.printedAreaM2)/r.printedAreaM2);}}else nt++;});});
   const avg=dif.length?dif.reduce((a,b)=>a+b,0)/dif.length*100:null;
-  return`${np} area${np===1?'':'s'} printed on the drawing${nt?`, ${nt} measured from the outline × scale²`:''}.${avg!=null?` Outline check: traced and printed areas differ by ${avg.toFixed(1)}% on average (${dif.length} room${dif.length===1?'':'s'}).`:''} Every room used is outlined on its floor.`;}
+  return`${np} area${np===1?'':'s'} printed or measured on the drawing${nt?`, ${nt} measured from the outline × scale²`:''}.${avg!=null?` Outline check: traced and printed areas differ by ${avg.toFixed(1)}% on average (${dif.length} room${dif.length===1?'':'s'}).`:''} Every room used is outlined on its floor.`;}
 function scopeFloors(sc){if(!sc)return[];if(sc.type==='floor')return FL[sc.id]&&!FL[sc.id].deleted?[FL[sc.id]]:[];
   if(sc.type==='building'){const b=bld(sc.id);return b?b.floors.map(id=>FL[id]):[];}return PROJ.buildings.flatMap(b=>b.floors.map(id=>FL[id]));}
 function scopeName(sc){if(!sc)return'';if(sc.type==='floor'){const f=FL[sc.id];return f&&!f.deleted?`${bld(f.bId).name} · ${fname(f)}`:'A deleted floor';}
@@ -1024,8 +951,8 @@ function answer(q,scope0,o={}){
   const T=P.t,filt=T.items?`kind = ${T.items.join(' or ')}`:T.units?`apartments${P.withSauna?' with a sauna':''}`:T.label?`label = “${T.label}”`:T.allRooms?'rooms (not corridors)':T.rooms?`type = ${T.rooms.join(' or ')}`:P.kind==='aptArea'?`apartment ${P.apt}, indoor rooms`:P.kind==='indoor'?'numbered indoor rooms':`room ${P.no}`;
   const noScale=A.per.filter(p=>p.noScale).length;
   if(isA){const np=ok.reduce((a,p)=>a+(p.x&&!p.dim?p.x.np:0),0),nt=ok.reduce((a,p)=>a+(p.x&&!p.dim?p.x.nt:0),0),est=ok.some(p=>{const d=FL[p.fid].schema.drawing;return d.scale&&d.scale.estimated;});
-    A.pill=missing.length?['chk',`${missing.length} floor${missing.length>1?'s':''} not read`]:noScale?['chk',`${noScale} floor${noScale>1?'s':''} without a scale`]:est&&nt?['chk','Scale estimated']:!nt?['ok','From printed areas']:!np?['ok','Traced at drawing scale']:['ok',`${np} printed, ${nt} traced`];
-    A.calc=`Σ area(${filt})${ok.length>1?' over '+ok.length+' floors':''}\n= ${f1(A.value)} m²\n${np} area${np===1?'':'s'} printed on the drawing${nt?`, ${nt} from the traced outline × scale²`:''}`;}
+    A.pill=missing.length?['chk',`${missing.length} floor${missing.length>1?'s':''} not read`]:noScale?['chk',`${noScale} floor${noScale>1?'s':''} without a scale`]:est&&nt?['chk','Scale estimated']:!nt?['ok','Areas from the drawing']:!np?['ok','Traced at drawing scale']:['ok',`${np} printed, ${nt} traced`];
+    A.calc=`Σ area(${filt})${ok.length>1?' over '+ok.length+' floors':''}\n= ${f1(A.value)} m²\n${np} area${np===1?'':'s'} printed or measured on the drawing${nt?`, ${nt} from the traced outline × scale²`:''}`;}
   else{A.pill=missing.length?['chk',`${missing.length} floor${missing.length>1?'s':''} not read`]:['ok','Every item marked'];
     A.calc=A.kind==='rank'?`count(${filt}) on each floor\n= ${[...ok].reverse().map(p=>p.val).join(', ')} (top floor first)\n${P.least?'fewest':'most'} = ${A.value}`:`count(${filt})${ok.length>1?' on '+ok.length+' floors':''} = ${A.value}`;}
   S('verify',verifyText(A,P,ok),{s:missing.length||noScale?'warn':'ok'});
@@ -1043,10 +970,9 @@ function thumbHTML(f){if(f.img)return`<img src="${f.img.url}" alt="">`;const c=c
   return`<svg viewBox="${c[0]} ${c[1]} ${c[2]-c[0]} ${c[3]-c[1]}" preserveAspectRatio="xMidYMid slice"><use href="#sd-${f.id}"/></svg>`;}
 function subHTML(f){const sc=f.schema;
   if(f.status==='read'){const nd=sc.items.filter(i=>i.kind==='door').length;return`${sc.rooms.length} rooms · ${nd} door${nd===1?'':'s'}`;}
-  if(f.status==='reading')return`<span class="rd">${f.live&&f.live.n?`Reading · ${f.live.rooms} rooms, ${f.live.doors} doors`:f.t0?`Claude is reading · ${Math.round((performance.now()-f.t0)/1000)} s`:'Reading…'}</span>`;
+  if(f.status==='reading')return`<span class="rd">${f.t0?`${esc(f.via||'Reading')} · ${Math.round((performance.now()-f.t0)/1000)} s`:'Reading…'}</span>`;
   if(f.status==='queued')return'Waiting for a free reader';
   if(f.status==='error')return`<span class="er">Couldn't read · ${esc(f.errShort||'error')}</span>`;
-  if(f.status==='nokey')return'<span class="wr">Needs Claude access</span>';
   return f.errShort==='stopped'?'Stopped':'Not read';}
 function cardHTML(f){const p=activeN(f.id),lv=levelOf(f),reread=['error','nokey','idle'].includes(f.status)||(f.status==='read'&&f.src!=='sample');
   return`<div class="fc ${f.id===ST.fid?'on':''}" data-f="${f.id}" tabindex="0" role="option" aria-selected="${f.id===ST.fid}">
@@ -1142,7 +1068,7 @@ async function addFiles(files,o={}){
   if(srcs.length>1&&srcs.every(s=>guessLevel(s.name)!=null))srcs.sort((a,c)=>guessLevel(a.name)-guessLevel(c.name));
   else if(srcs.length>1&&!srcs.some(s=>s.canvas))srcs.sort((a,c)=>a.name.localeCompare(c.name,undefined,{numeric:true}));
   const made=[];
-  for(const s of srcs){let P;try{P=s.canvas?await prepDrawable(s.canvas,s.canvas.width,s.canvas.height,s.name):await prepFile(s.file);}catch(e){bad.push(s.name);continue;}
+  for(const s of srcs){let P;try{P=s.canvas?await prepDrawable(s.canvas,s.canvas.width,s.canvas.height,s.name):await prepFile(s.file);if(s.canvas)P.origCanvas=s.canvas;}catch(e){bad.push(s.name);continue;}
     const k=base(s.name),j=js[k];if(j)delete js[k];made.push(makeFloor(b.id,{src:'upload',file:s.name,img:P,schemaJson:j||null,meta:{name:s.file?s.file.name:s.name,bytes:s.file?s.file.size:null,page:s.page||null,pages:s.pages||null}}));}
   Object.keys(js).forEach(k=>made.push(makeFloor(b.id,{src:'json',file:k+'.json',schemaJson:js[k]})));
   if(!made.length){toast(bad.length?`Could not add ${bad.join(', ')}.`:'Add PNG, JPG, SVG or PDF floor plans.');return;}
@@ -1190,10 +1116,9 @@ function renderLegend(){const f=FL[ST.fid],el=$('#legend');if(!f||!f.schema){el.
   else h=`<span style="color:var(--fnt)">Reading layer hidden</span><button data-act="trace">Show</button>`;
   el.innerHTML=h;el.hidden=false;}
 function renderReadBan(){const f=FL[ST.fid],el=$('#rdban');if(!f){el.hidden=true;return;}let h='',warn=false;
-  if(f.status==='reading')h=`<span class="spin"></span><span>${f.t0?'Claude is reading this floor. Rooms, doors and windows appear as they are found.':'Reading the sample drawing…'}</span>${f.ctl?`<button class="btn sm" data-act="stop" data-f="${f.id}">Stop</button>`:''}`;
+  if(f.status==='reading')h=`<span class="spin"></span><span>${f.via==='Our model is reading'?`Our model is reading this floor at ${esc(hostOf(CFG.endpoint))}. Each step shows in the trace.`:esc(f.via||'Reading')+'…'}</span>${f.ctl?`<button class="btn sm" data-act="stop" data-f="${f.id}">Stop</button>`:''}`;
   else if(f.status==='queued')h=`<span class="spin"></span><span>Waiting for a free reader. Up to ${poolSize()} floors are read at the same time.</span>`;
-  else if(f.status==='nokey'){warn=true;h=SAMPLER&&!CLAUDE_OFF?`<span>${esc(f.err)}</span><button class="btn sm pri" data-act="reread" data-f="${f.id}">Try again</button>`:`<span>${esc(f.err)}</span><button class="btn sm pri" data-act="settings">Settings</button>`;}
-  else if(f.status==='error'||f.status==='idle'){warn=f.status==='error';h=`<span>${esc(f.err||'Not read yet.')}</span><button class="btn sm pri" data-act="reread" data-f="${f.id}">${f.status==='idle'?'Read':'Try again'}</button>`;}
+  else if(f.status==='error'||f.status==='idle'){warn=f.status==='error';h=`<span>${esc(f.err||'Not read yet.')}</span><button class="btn sm pri" data-act="reread" data-f="${f.id}">${f.status==='idle'?'Read':'Try again'}</button>${f.errShort==='model offline'?'<button class="btn sm" data-act="settings">Settings</button>':''}`;}
   el.hidden=!h;el.classList.toggle('warn',warn);el.innerHTML=h;}
 let scanRaf=0;
 function scanCtl(){cancelAnimationFrame(scanRaf);const f=FL[ST.fid],sc=$('#scan');if(!f||f.deleted||f.status!=='reading'||ST.view!=='plan'){sc.style.display='none';return;}
@@ -1203,7 +1128,7 @@ function scanCtl(){cancelAnimationFrame(scanRaf);const f=FL[ST.fid],sc=$('#scan'
 function renderInspect(){const el=$('#insp'),f=FL[ST.fid],sc=f&&f.schema,r=sc&&ST.sel?sc.rooms.find(x=>x.id===ST.sel):null;if(!r){el.hidden=true;return;}
   const mpp=sc.drawing.metersPerPixel,tr=mpp?shoelace(r.polygon)*mpp*mpp:null,its=sc.items.filter(i=>i.roomIds.includes(r.id)),c=k=>its.filter(i=>i.kind===k).length,fx=its.filter(i=>!['door','window'].includes(i.kind));
   el.hidden=false;el.innerHTML=`<button class="x" data-act="desel" aria-label="Close">${I.x}</button><h4>${esc(RT[r.type].en)} <span class="asc">${esc(r.label)}${r.unit?' · '+esc(r.unit):''}</span></h4>
-    ${r.printedAreaM2!=null?`<div class="row"><span>Area printed</span><b>${f1(r.printedAreaM2)} m²</b></div>`:''}<div class="row"><span>Area traced</span><b>${tr!=null?f1(tr)+' m²':'no scale'}</b></div>
+    ${r.measuredAreaM2!=null?`<div class="row"><span>Area measured</span><b>${f1(r.measuredAreaM2)} m²</b></div>`:''}${r.printedAreaM2!=null?`<div class="row"><span>Area printed</span><b>${f1(r.printedAreaM2)} m²</b></div>`:''}<div class="row"><span>Area traced</span><b>${tr!=null?f1(tr)+' m²':'no scale'}</b></div>
     <div class="row"><span>Doors</span><b>${c('door')}</b></div><div class="row"><span>Windows</span><b>${c('window')}</b></div>${fx.length?`<div class="row"><span>Fixtures</span><b>${fx.map(i=>(KIND[i.kind]||KIND.other)[0]).join(', ')}</b></div>`:''}`;}
 function fitPlan(){const f=FL[ST.fid];if(!f)return;const el=$('#vw'),cw=el.clientWidth||900,ch=el.clientHeight||600,bx=cropOf(f),bw=bx[2]-bx[0],bh=bx[3]-bx[1],s=Math.max(bw/Math.max(100,cw-60),bh/Math.max(100,ch-150));
   VB[f.id]={x:(bx[0]+bx[2])/2-cw*s/2,y:(bx[1]+bx[3])/2-ch*s/2-10*s,w:cw*s,h:ch*s,auto:true};applyVB();}
@@ -1221,7 +1146,7 @@ function zoomToBox(b){const f=FL[ST.fid];if(!f)return;const el=$('#vw'),pad=150,
 })();
 function updateEmpty(){const empty=!curB().floors.length;$('#vw').classList.toggle('isempty',empty);$('#empty').hidden=!empty;}
 function renderEmpty(){$('#empty').innerHTML=`<div class="dz"><svg class="ill" viewBox="0 0 220 150" aria-hidden="true"><g stroke-width="1.5" stroke-linejoin="round"><path d="M30 112 110 137 190 112 110 87Z" fill="#262626" stroke="#4A4A4A"/><path d="M30 82 110 107 190 82 110 57Z" fill="#2A2A2A" stroke="#585858"/><path d="M30 52 110 77 190 52 110 27Z" fill="#253148" stroke="#5B95FF"/><path d="M70 52 110 64.5 150 52M110 39.5V64.5M86 44.5 126 57" fill="none" stroke="#8DB6FF"/></g></svg>
-  <h2>Build your building from floor plans</h2><p>Add one floor plan per floor: images, or a PDF with a page per floor. Claude reads each one, the floors stack into 3D, and every answer is marked on the drawings.</p>
+  <h2>Build your building from floor plans</h2><p>Add one floor plan per floor: images, or a PDF with a page per floor. Our model reads each one, the floors stack into 3D, and every answer is marked on the drawings.</p>
   <div class="row"><button class="btn pri" data-act="choose">${I.upl}Add floor plans</button><button class="btn" data-act="sample">Try a sample building</button></div><small>Floors are ordered by the number in the file name (krs1, floor-2…). Drag them to fix the order.</small></div>`;}
 
 /* =====================================================================
@@ -1261,7 +1186,7 @@ function mppOf(f){const m=f.schema&&f.schema.drawing.metersPerPixel;if(m)return 
   const ms=bld(f.bId).floors.map(id=>FL[id].schema&&FL[id].schema.drawing.metersPerPixel).filter(Boolean).sort((a,b)=>a-b);if(ms.length)return ms[ms.length>>1];const[W,H]=dims(f);return 24/Math.max(W,H);}
 /* ---------- 3D from the schema alone. Rooms are filled on a fine grid, the band around them
    becomes wall, and every door or window cuts an opening. Works the same whether the schema
-   came from Claude, the team model, or a schematic file; doors and windows may be boxes or points. ---------- */
+   came from the model server or a schema file; doors and windows may be boxes or points. ---------- */
 const RTC={Living:0x56663F,Dining:0x56663F,Lobby:0x56663F,Bedroom:0x5E4E78,Kitchen:0x7A6440,Bathroom:0x2F5F86,WC:0x2F5F86,Wash:0x2F5F86,Sauna:0x7A4E3A,Hall:0x4C4C4C,Corridor:0x4C4C4C,Stair:0x4C4C4C,Lift:0x4C4C4C,Closet:0x5A5448,Storage:0x5A5448,Utility:0x4F5A5A,Technical:0x5A5448,Bike:0x5A5448,Balcony:0x3E6660,Office:0x415A73,Meeting:0x415A73,OpenOffice:0x415A73,Room:0x505050};
 const FXS={toilet:[.4,.7,.42],sink:[.6,.45,.86],kitchen_sink:[.8,.6,.9],shower:[.9,.9,.06],bathtub:[1.7,.75,.56],sauna_stove:[.45,.45,.8],other:[.6,.6,.6]}; // along wall, from wall, height (m)
 const rtMat=t=>{if(!T3.mRT[t]){const m=new T3.THREE.MeshBasicMaterial({color:RTC[t]||RTC.Room,transparent:true,opacity:.62,depthWrite:false});T3.mRT[t]=m;T3.shared.add(m);}return T3.mRT[t];};
@@ -1411,9 +1336,22 @@ function renderAskEmpty(){const ms=$('#msgs');if(ms.querySelector('.ans,.uq'))re
 function ask(q,scope){q=q.trim();if(!q)return;const ms=$('#msgs');ms.querySelector('.aempty')?.remove();
   const u=document.createElement('div');u.className='uq';u.textContent=q;ms.appendChild(u);
   const A=answer(q,scope||ST.scope);ANS[A.n]=A;ST.trN=A.n;const d=document.createElement('div');d.className='ans';d.dataset.n=A.n;ms.appendChild(d);
-  if(A.kind!=='nope')activate(A.n);else d.innerHTML=ansHTML(A);ms.scrollTop=ms.scrollHeight;if(ST.trOpen)setTrace(null,'answer');}
+  if(A.kind!=='nope')activate(A.n);else{d.innerHTML=ansHTML(A);askServer(A,d);}ms.scrollTop=ms.scrollHeight;if(ST.trOpen)setTrace(null,'answer');}
+function serverHTML(A){const j=A.server,f=FL[A.serverFid],v=typeof j.answer==='number'?Math.round(j.answer*100)/100:j.answer,pill=j.modelCalls===0?['ok','Measured on the drawing']:j.status==='confident'?['ok','Two methods agree']:['chk','Check this'];
+  return`<div class="ahead"><span class="asc">${esc(f?fname(f):'')}</span><span class="pill ${pill[0]}">${esc(pill[1])}</span></div><div class="big"><b>${esc(String(v))}</b><span class="u">${esc(j.unit||'')}</span></div><div class="atext">${esc(j.source||'Answered by our model')} · ${j.modelCalls||0} model call${j.modelCalls===1?'':'s'}, ${j.tokens||0} tokens</div>`
+    +(j.methods&&j.methods.length?`<details class="how"><summary>How this was worked out</summary><div class="calc">${esc(j.methods.map(m=>`${m.tool} = ${m.value} · ${m.detail||''}`).join('\n'))}</div></details>`:'')+`<div class="aact"><button class="alink mut" data-act="opentr" data-ans="${A.n}">Every step in the trace</button></div>`;}
+async function askServer(A,d){const f=FL[A.scope&&A.scope.type==='floor'?A.scope.id:ST.fid];await probeP;if(!f||f.deleted||!f.img||CFG.proto!=='analyze')return;
+  const note=document.createElement('div');note.className='atext';note.textContent=`Asking our model about ${fname(f)}…`;d.appendChild(note);const t0=performance.now();
+  try{const fd=new FormData();fd.append('file',await origBlob(f.img),f.file||'sheet.png');fd.append('question',A.q);
+    const r=await fetch(CFG.endpoint+'/ask',{method:'POST',body:fd}),j=await r.json().catch(()=>({}));if(!r.ok||j.error)throw new Error(j.error||('the server answered '+r.status));
+    const ms=performance.now()-t0,cost={k:'cost',d:`${j.modelCalls||0} model call${j.modelCalls===1?'':'s'}, ${j.tokens||0} tokens, ${fmtMs(ms)} on our model.`,s:'ok',ms};
+    if(j.answer==null){note.textContent=j.status==='cant_verify'?'Not answerable from this drawing.':'No answer the tools on this sheet could support.';A.steps.splice(A.steps.length-1,1,{k:'model.ask',d:`POST /ask on ${fname(f)} · ${note.textContent}`,s:'warn',ms},cost);trSoon();return;}
+    A.server=j;A.serverFid=f.id;d.innerHTML=serverHTML(A);
+    A.steps.splice(A.steps.length-1,1,{k:'model.ask',d:`The schema could not answer, so our model read ${fname(f)} itself · ${j.source||'answer'} · status ${j.status||'?'}`,s:j.status==='confident'||j.modelCalls===0?'ok':'warn',ms},...(j.methods||[]).map(m=>({k:String(m.tool),d:`${m.value} · ${m.detail||''}`,s:'ok'})),cost);trSoon();}
+  catch(e){note.textContent='Our model could not answer: '+e.message;}}
 const fmtBadge=v=>ST.active&&ST.active.unit==='m²'?Math.round(v):v;
 function ansHTML(A){
+  if(A.server)return serverHTML(A);
   if(A.kind==='nope')return`<div class="ahead"><span class="pill no">Can't verify</span></div><div class="atext">${esc(A.text)}</div><div class="aact"><button class="alink mut" data-act="opentr" data-ans="${A.n}">See why in the trace</button></div>`;
   const isA=A.unit==='m²',on=ST.active&&ST.active.n===A.n;
   let h=`<div class="ahead"><span class="asc">${esc(scopeName(A.scope))}</span><span class="pill ${A.pill[0]}">${esc(A.pill[1])}</span></div><div class="big"><b>${isA?f1(A.value):A.value}</b><span class="u">${isA?'m²':esc(nounOf(A.P,A.value))}</span></div>`;
@@ -1436,7 +1374,7 @@ function activate(n){const A=ANS[n];if(!A)return;ST.active=A;
 function clearActive(){ST.active=null;refreshAnswerViews();}
 function refreshAnswerViews(){$$('.ans').forEach(el=>{const A=ANS[el.dataset.n];if(A){el.classList.toggle('act',!!ST.active&&ST.active.n===A.n);el.innerHTML=ansHTML(A);}});
   renderList();renderTabs();if(ST.view==='plan'){drawEvidence();renderLegend();}else{pins3D();labels3D();}}
-function rerunAnswers(){const ns=Object.keys(ANS);if(!ns.length)return;ns.forEach(n=>{const o=ANS[n];if(o.kind==='nope'&&o.P&&o.P.unsupported)return;const A=answer(o.q,o.scope,{silent:1});A.n=o.n;ANS[n]=A;if(ST.active&&ST.active.n===A.n)ST.active=A;});
+function rerunAnswers(){const ns=Object.keys(ANS);if(!ns.length)return;ns.forEach(n=>{const o=ANS[n];if(o.server||(o.kind==='nope'&&o.P&&o.P.unsupported))return;const A=answer(o.q,o.scope,{silent:1});A.n=o.n;ANS[n]=A;if(ST.active&&ST.active.n===A.n)ST.active=A;});
   refreshAnswerViews();if(ST.trTab==='answer')trSoon();}
 
 /* =====================================================================
@@ -1457,7 +1395,7 @@ function renderTrace(){if(!ST.trOpen)return;const live=anyReading();
 function stepHTML(s){return`<div class="ts ${s.s||'ok'}"><span class="tdot"></span><code title="${esc(s.k)}">${esc(s.k)}</code><span class="td">${esc(s.d||'')}</span><span class="tm">${s.s==='run'?fmtMs(performance.now()-s.t0):s.ms!=null?fmtMs(s.ms):''}</span></div>`;}
 function traceAnswerHTML(){const ns=Object.keys(ANS).map(Number),A=ANS[ST.trN]||(ns.length?ANS[Math.max(...ns)]:null);
   if(!A)return`<div class="tempty">Ask a question and every step shows here: how the question was read, which floors were used, each count or area with the items behind it, the check, and what it cost. Answers are plain code over the schema, so asking makes no model calls.</div>`;
-  const val=A.kind==='nope'?'cannot verify':A.unit==='m²'?f1(A.value)+' m²':A.value+' '+nounOf(A.P,A.value);
+  const val=A.server?`${typeof A.server.answer==='number'?Math.round(A.server.answer*100)/100:A.server.answer} ${A.server.unit||''}`:A.kind==='nope'?'cannot verify':A.unit==='m²'?f1(A.value)+' m²':A.value+' '+nounOf(A.P,A.value);
   return`<div class="tq">“${esc(A.q)}” <span class="asc">→ ${esc(val)}</span></div>`+A.steps.map(stepHTML).join('');}
 function traceReadingHTML(){const b=curB(),now=performance.now(),fs=b.floors.map(id=>FL[id]).filter(f=>f.rt);let h='';
   if(fs.length){const T0=Math.min(...fs.map(f=>f.rt.s)),T1=Math.max(...fs.map(f=>f.rt.e||now)),span=Math.max(1,T1-T0),sum=fs.reduce((a,f)=>a+((f.rt.e||now)-f.rt.s),0),tok=fs.reduce((a,f)=>a+(f.usage?f.usage.in+f.usage.out:0),0),done=fs.filter(f=>f.rt.e).length;
@@ -1475,35 +1413,34 @@ function traceReadingHTML(){const b=curB(),now=performance.now(),fs=b.floors.map
    ===================================================================== */
 function modal(html){$('#mbox').innerHTML=html;$('#modal').hidden=false;setTimeout(()=>{const el=$('#mbox').querySelector('input:not([type=radio]),button');if(el)el.focus();},0);}
 function closeModal(){$('#modal').hidden=true;$('#mbox').innerHTML='';}
-function settingsModal(){const viaAcct=SAMPLER&&!CLAUDE_OFF,inC=!!window.claude;
-  modal(`<h2>Settings</h2><p class="sub">Choose what reads the floor plans. Everything after reading stays the same: answers with proof, 3D, and the trace.</p>
-   <h3>Reader</h3>
-   <label class="opt ${CFG.reader==='api'?'on':''}"><input type="radio" name="rd" value="api" ${CFG.reader==='api'?'checked':''}><div><b>Our model</b>
-     <span>The team's model server. Each floor goes to <code>/api/plan</code> and comes back as a scene from <code>/api/scene</code>; a server with <code>/analyze</code> that returns a schema works too. 3 floors at a time.${inC?' Inside claude.ai this page cannot call other servers: download it, or serve it from the model server.':' The server must allow CORS, or serve this page itself.'}</span>
-     <div class="mrow"><input class="fld" id="ep" value="${esc(CFG.endpoint)}" aria-label="Model server address"><button class="btn sm" id="ping" type="button">Test</button></div><span id="pingr"></span></div></label>
-   <label class="opt ${CFG.reader==='claude'?'on':''}"><input type="radio" name="rd" value="claude" ${CFG.reader==='claude'?'checked':''}><div><b>Claude, as a stand-in until our model is ready</b>
-     <span>${viaAcct?'Runs on your Claude account in claude.ai, 2 floors at a time.':'Runs only inside claude.ai, on your Claude account.'} No API key is used or stored.</span>
-     </div></label>
-   <p class="sub">Already have the model's output? No reader is needed: drop each plan image together with its schema JSON (same file name), or the JSON alone.</p>
+function settingsModal(){const inC=!!window.claude;
+  modal(`<h2>Settings</h2><p class="sub">Our model reads the floor plans. Everything after reading stays the same: answers with proof, 3D, and the trace.</p>
+   <h3>Model server</h3>
+   <p class="sub">Each floor goes to <code>/api/plan</code> and comes back as a scene from <code>/api/scene</code>; a server with <code>/analyze</code> that returns a schema works too. Up to 3 floors at a time.${inC?' Inside claude.ai this page cannot call other servers: open Blueline from the model server (copy index.html into its web/ folder).':' When Blueline is served by the model server it connects by itself; otherwise the server must allow CORS.'}</p>
+   <div class="mrow"><input class="fld" id="ep" value="${esc(CFG.endpoint)}" aria-label="Model server address"><button class="btn sm" id="ping" type="button">Test</button></div><span id="pingr" class="asc"></span>
+   <h3>Model output you already have</h3><p class="sub">No server needed: drop each plan image together with its schema JSON (same file name), or the JSON alone.</p>
    <div class="mrow"><button class="btn sm" data-act="readall">Read all floors again</button></div>
    <h3>Data</h3><div class="mrow"><button class="btn sm" data-act="exportjson">Export floors (JSON)</button><button class="btn sm" data-act="exportcsv">Export quantities (CSV)</button></div>
    <div class="mact"><button class="btn pri" data-act="close">Done</button></div>`);
-  $$('#mbox input[name=rd]').forEach(r=>r.onchange=()=>{CFG.reader=r.value;store.set('bl_reader',CFG.reader);$$('#mbox .opt').forEach(o=>o.classList.toggle('on',o.querySelector('input[type=radio]').checked));renderStatus();pump();});
-  $('#ep').onchange=()=>{CFG.endpoint=$('#ep').value.trim()||CFG.endpoint;store.set('bl_endpoint',CFG.endpoint);};
-  $('#ping').onclick=async e=>{e.preventDefault();CFG.endpoint=$('#ep').value.trim()||CFG.endpoint;store.set('bl_endpoint',CFG.endpoint);const out=$('#pingr');out.textContent='Testing…';
-    if(inC){out.textContent='claude.ai blocks calls from this page to other servers. Download the page and open it locally, or serve it from the model server.';return;}
-    try{const r=await fetch(CFG.endpoint.replace(/\/$/,'')+'/api/scene?id=ping'),j=await r.json().catch(()=>null);out.textContent=r.status===404&&j&&/plan not found/i.test(j.error||'')?'Team model server found. Choose "Our model" to use it.':r.ok?'Connected.':`It answered ${r.status}.`;}
-    catch(err){out.textContent='Could not reach it. Is it running, with CORS allowed?';}};}
+  const save=()=>{CFG.endpoint=($('#ep').value.trim()||CFG.endpoint).replace(/\/$/,'');store.set('bl_endpoint',CFG.endpoint);renderStatus();};
+  $('#ep').onchange=save;
+  $('#ping').onclick=async e=>{e.preventDefault();save();const out=$('#pingr');out.textContent='Testing…';
+    if(inC){out.textContent='claude.ai blocks calls from this page to other servers. Open Blueline from the model server instead.';return;}
+    const pr=await probeModel(CFG.endpoint);CFG.proto=pr;renderStatus();out.textContent=pr==='analyze'?'Connected: our reader (/analyze, /ask).':pr==='scene'?'Connected: team model (/api/plan, /api/scene).':'No model answered there. Is it running, with CORS allowed?';if(pr)pump();};}
 function helpModal(){modal(`<h2>How Blueline works</h2>
   <ol class="steps"><li><b>Add floor plans.</b> One image per floor, or a PDF with a page per floor. Each floor becomes a card on the left. Already have model output? Drop the image with its schema JSON.</li>
    <li><b>Put them in order.</b> Drag cards up or down; the top card is the top floor. Drop a card on a building tab to move it there.</li>
-   <li><b>Let it read.</b> Floors are read in parallel. The reader returns a schema: rooms, doors, windows, fixtures and the scale. Each step shows live in the trace.</li>
+   <li><b>Let it read.</b> Our model reads the floors in parallel and returns a schema: rooms, doors, windows, fixtures and the scale. Each step shows live in the trace.</li>
    <li><b>Look around.</b> Plan shows one floor with what was read. 3D stacks the building, built from the schema alone.</li>
    <li><b>Ask.</b> About a floor, the building, or all buildings. Answers are plain code over the schema: every item is marked, and the trace shows each step and its cost.</li></ol>
   <h3>Shortcuts</h3><div class="keys"><kbd>P</kbd><span>Plan view</span><kbd>3</kbd><span>3D view</span><kbd>T</kbd><span>Show or hide the trace</span><kbd>R</kbd><span>Show or hide what was read</span><kbd>↑ ↓</kbd><span>Floor above or below</span><kbd>Alt ↑ ↓</kbd><span>Move the floor up or down</span><kbd>F</kbd><span>Frame the view</span><kbd>Delete</kbd><span>Delete the floor (with undo)</span></div>
   <div class="mact"><button class="btn pri" data-act="close">Got it</button></div>`);}
 function requeueNokey(){Object.values(FL).forEach(f=>{if(!f.deleted&&f.status==='nokey')queueRead(f);});renderStatus();}
-function readerLabel(){return CFG.reader==='api'?'our model':SAMPLER&&!CLAUDE_OFF?'Claude stand-in':'Claude stand-in (claude.ai only)';}
+function readerLabel(){return`our model · ${hostOf(CFG.endpoint)}${CFG.proto?'':CFG.probing?' · checking…':' · not connected'}`;}
+async function probeModel(ep){ep=String(ep||'').replace(/\/$/,'');if(!ep)return null;
+  try{const r=await fetch(ep+'/analyze');if([200,405,422].includes(r.status))return'analyze';}catch(e){}
+  try{const r=await fetch(ep+'/api/scene?id=probe'),j=await r.json().catch(()=>null);if(r.status===404&&j&&/plan not found/i.test(j.error||''))return'scene';}catch(e){}
+  return null;}
 function renderStatus(){const fs=Object.values(FL).filter(f=>!f.deleted),rd=fs.filter(isRead).length,ing=fs.filter(f=>f.status==='reading').length,wait=fs.filter(f=>f.status==='queued').length;
   $('#stat').textContent=fs.length?`${rd}/${fs.length} floors read${ing||wait?` · reading ${ing}${wait?`, ${wait} waiting`:''}, up to ${poolSize()} at a time`:''} · reader: ${readerLabel()}`:`Reader: ${readerLabel()}`;
   const tl=$('#trLive');if(tl)tl.hidden=!(ing||wait);}
@@ -1610,8 +1547,7 @@ ST.trOpen=store.get('bl_tr',true);{const th=store.get('bl_trh',0);if(th)$('#trac
 renderEmpty();renderVnav();renderCtl3();renderAll();setTrace(null);
 setInterval(()=>{if(ST.trOpen&&ST.trTab==='reading'&&anyReading())renderTrace();},500);
 /* served by the team's model server itself? then it can read the floors with no setup */
-if(!window.claude&&/^https?:$/.test(location.protocol))fetch('/api/scene?id=probe').then(r=>r.status===404?r.json():null).then(j=>{if(!j||!/plan not found/i.test(j.error||''))return;
-  CFG.endpoint=location.origin;store.set('bl_endpoint',CFG.endpoint);if(store.get('bl_reader',null)==null)CFG.reader='api';renderStatus();toast(CFG.reader==='api'?'Our model is serving this page and reads the floors.':'Our model server found. Choose it in Settings.');}).catch(()=>{});
+
 window.BL={PROJ,FL,ST,T3,ANS,CFG,ask,answer,parseQ,evalSheet,addFiles,loadSample,setView,selectFloor,moveFloor,deleteFloor,queueRead,setTrace,poolSize,wallModel,fromTeamSchematic,fromTeamScene};
 </script>
 </body>

@@ -935,7 +935,7 @@ function nounOf(P,n){const t=P.t,one=n===1;if(!t)return'';
   if(t.label)return`${one?'room':'rooms'} labelled “${t.label}”`;
   if(t.floors)return P.sheet?(one?'storey':'storeys'):(one?'floor':'floors');if(t.allRooms)return one?'room':'rooms';if(t.area)return'm²';
   const r=RT[t.rooms[0]];return one?r.en.toLowerCase():r.pl;}
-const roomArea=(sc,r)=>r.printedAreaM2!=null?+r.printedAreaM2:sc.drawing.metersPerPixel?shoelace(r.polygon)*sc.drawing.metersPerPixel**2:null;
+const roomArea=(sc,r)=>r.measuredAreaM2!=null?+r.measuredAreaM2:r.printedAreaM2!=null?+r.printedAreaM2:sc.drawing.metersPerPixel?shoelace(r.polygon)*sc.drawing.metersPerPixel**2:null;
 const unitsOf=sc=>{const u=[...new Set(sc.rooms.filter(r=>r.unit).map(r=>r.unit))];return u.length?u:(sc.apartments||[]);};
 function evalSheet(sc,P){
   const t=P.t,ev=[],x={np:0,nt:0,rows:[]};let val=0;
@@ -1428,7 +1428,20 @@ function renderAskEmpty(){const ms=$('#msgs');if(ms.querySelector('.ans,.uq'))re
 function ask(q,scope){q=q.trim();if(!q)return;const ms=$('#msgs');ms.querySelector('.aempty')?.remove();
   const u=document.createElement('div');u.className='uq';u.textContent=q;ms.appendChild(u);
   const A=answer(q,scope||ST.scope);ANS[A.n]=A;ST.trN=A.n;const d=document.createElement('div');d.className='ans';d.dataset.n=A.n;ms.appendChild(d);
-  if(A.kind!=='nope')activate(A.n);else d.innerHTML=ansHTML(A);ms.scrollTop=ms.scrollHeight;if(ST.trOpen)setTrace(null,'answer');}
+  if(A.kind!=='nope')activate(A.n);else{d.innerHTML=ansHTML(A);if(CFG.reader==='api')askServer(q,d);}ms.scrollTop=ms.scrollHeight;if(ST.trOpen)setTrace(null,'answer');}
+/* questions the schema cannot answer (printed dimensions, tags, lengths...): the reader server answers from the sheet itself.
+   Schematic first (no model call), then a model-planned set of local tools, then the model's own answer marked "check". */
+async function askServer(q,d){const f=FL[ST.fid];if(!f||!f.img||!f.img.blob)return;
+  const note=document.createElement('div');note.className='atext';note.textContent='Asking the drawing itself (local tools on this sheet)…';d.appendChild(note);
+  try{const fd=new FormData();fd.append('file',f.img.blob,f.file||'sheet.png');fd.append('question',q);
+    const r=await fetch(CFG.endpoint.replace(/\/$/,'')+'/ask',{method:'POST',body:fd}),j=await r.json().catch(()=>({}));
+    if(!r.ok||j.error)throw new Error(j.error||('the server answered '+r.status));
+    if(j.answer==null)throw new Error('no answer the tools could support');
+    const v=typeof j.answer==='number'?Math.round(j.answer*100)/100:j.answer,pill=j.modelCalls===0?['ok','Measured on the drawing']:j.status==='confident'?['ok','Two methods agree']:['chk','Check this'];
+    d.innerHTML=`<div class="ahead"><span class="asc">${esc(fname(f))}</span><span class="pill ${pill[0]}">${esc(pill[1])}</span></div><div class="big"><b>${esc(String(v))}</b><span class="u">${esc(j.unit||'')}</span></div>`
+      +`<div class="atext">${esc(j.source)} · ${j.modelCalls} model call${j.modelCalls===1?'':'s'}, ${j.tokens} tokens</div>`
+      +(j.methods&&j.methods.length?`<details class="how"><summary>How this was worked out</summary><div class="calc">${j.methods.map(m=>esc(`${m.tool} = ${m.value} · ${m.detail}`)).join('<br>')}</div></details>`:'');}
+  catch(e){note.textContent='The drawing server could not answer: '+e.message;}}
 const fmtBadge=v=>ST.active&&ST.active.unit==='m²'?Math.round(v):v;
 function ansHTML(A){
   if(A.kind==='nope')return`<div class="ahead"><span class="pill no">Can't verify</span></div><div class="atext">${esc(A.text)}</div><div class="aact"><button class="alink mut" data-act="opentr" data-ans="${A.n}">See why in the trace</button></div>`;

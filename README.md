@@ -78,17 +78,6 @@ interface BluelineSchema {
 }
 ```
 
-## Our reader (deterministic, `blueline_api.py` in the team repo)
-
-The reader behind **Blueline API** reads each floor with **no model call**:
-- the scale from the scale bar, measured in pixels and read by OCR;
-- painted rooms, with polygons and **`measuredAreaM2`** (the net area measured on the drawing; enclosed shafts and rooms excluded), and their type from the label in 7 languages;
-- every text, with **`tags[]`** for tagged objects such as `PS-12` or `FSCV-3`.
-
-The page prefers `measuredAreaM2` over the shoelace area. When the schema can't answer a question (printed dimensions, tags, lengths), the page asks the server's **`POST /ask`** about the current floor. It returns the answer, `status` (`confident`/`check`), the source, model calls and tokens.
-
-The server also serves this page at `/`, so one hosted URL gives both the page and the reader. The page detects the reader by itself.
-
 ## Honesty notes
 
 - The sample building is generated, so its "reading" is exact by construction and makes no model call. The trace says so.

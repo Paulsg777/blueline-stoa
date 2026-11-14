@@ -4,18 +4,17 @@ Ask a whole construction project a question and see exactly where every answer c
 
 Junction 2026, Stoa challenge "Make Blueprints Talk". Single self-contained file: open `index.html` in a browser.
 
-Version: **V4, 14 Nov 2026**
+Version: **V5, 14 Nov 2026**
 
-## What the interface does
+## How it works
 
-- **Project → buildings → floors.** A project holds several buildings, each with one sheet per floor (8 floors is fine). The sample project has Building A (housing, 8 floors) and Building B (offices, 3 floors).
-- **Read once, ask many.** Each sheet is read once into `schema.json`. Every question is then answered in code over those schemas, so extra questions cost nothing.
-- **Ask at any level.** Floor, building or whole project, in English or Finnish. Examples: "Which floor has the most saunas?", "How many apartments have a sauna?", "Net floor area of building B?", "Montako ovea kerroksessa 3 on?"
-- **Proof everywhere.** Every counted item is numbered on its floor. Per-floor bars and the floor strip jump to the sheet with the marks. Areas show the calculation and are cross-checked against the areas printed in the rooms.
-- **No proof, no answer.** Questions the drawings can't support get "can't verify".
-- **Review queue.** Items under 80% confidence are counted but flagged. Confirm or reject them and every answer updates.
-- **Quantity takeoff.** Counts and net areas per floor and building, export as CSV, schemas as JSON.
-- **Accuracy check.** Stoa scores accuracy on one blueprint, so there is a one-sheet check: counts exact, areas within 2%. It ships with a sample key generated with the drawing. Load Stoa's key as JSON (`[{"question": "...", "answer": 14}]`) to score a real sheet.
+1. **Add floor plans.** One image per floor (PNG, JPG, SVG), or a PDF with a page per floor. Each floor becomes a card in the left panel, ordered by the number in the file name (`krs1`, `floor-2`...).
+2. **Put them in order.** Drag cards up or down; the top card is the top floor and floor numbers update. Drop a card on a building tab to move it to that building. Double-click a name to rename it. Delete has undo. Keyboard: Alt + arrows moves a floor.
+3. **Reading.** Each floor is read once into `schema.json` (rooms, doors, windows, fixtures, scale). For the trial this is Claude: inside claude.ai it runs on the viewer's own Claude account; in a downloaded copy it uses an Anthropic API key kept in the browser. The trace appears live while Claude reads.
+4. **Plan and 3D.** Plan shows one floor with what was read in blue. 3D stacks the whole building: plates show each drawing, walls rise as each floor is read. Click a floor to pick it, double-click to open its plan. Spread pulls floors apart; "Only this floor" isolates one.
+5. **Ask.** About this floor, the building, or all buildings, in English or Finnish. Answers are computed in code from the schemas, so extra questions cost nothing. Every counted item is numbered on its floor, per-floor bars jump to that floor, and in 3D each counted item gets a pin. Questions the drawings cannot support get "can't verify".
+
+Sample building: one click loads a generated 5-floor building to try everything without uploads.
 
 ## Swapping in the real model
 

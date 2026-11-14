@@ -642,13 +642,12 @@ async function pdfPages(file){ // every page of a PDF becomes one floor
 }
 
 /* =====================================================================
-   5. Reading with Claude (the trial reader). In claude.ai the page asks
-      Claude on the viewer's own account; in a downloaded copy it uses an
-      Anthropic API key kept in this browser. Same prompt and model as V3.5.
+   5. Reading with Claude, the stand-in reader until our model is ready. It runs
+      only inside claude.ai, on the viewer's own Claude account. No API key is
+      used or stored anywhere.
    ===================================================================== */
-const API_MODEL='claude-sonnet-5-5',KEYNAME='blueline_api_key';
-const getKey=()=>{try{return localStorage.getItem(KEYNAME)||'';}catch(e){return'';}};
-const setKey=v=>{try{if(v)localStorage.setItem(KEYNAME,v);else localStorage.removeItem(KEYNAME);}catch(e){}};
+const API_MODEL='claude-sonnet-5-5';
+try{localStorage.removeItem('blueline_api_key');}catch(e){} // earlier versions could keep an API key in this browser; it is deleted on every load
 let SAMPLER=null,CLAUDE_OFF=false;
 const samplerP=(async()=>{try{if(!window.claude||!window.claude.use)return null;const s=await window.claude.use('sample');if(!s)return null;const lim=await s.limits().catch(()=>null);return lim&&lim.images?s:null;}catch(e){return null;}})().then(s=>{SAMPLER=s;renderStatus();return s;});
 const READ_PROMPT=(W,H)=>`You are tracing an architectural floor plan so that every later answer can be checked on the drawing.
@@ -713,21 +712,6 @@ function toSchema(raw,P,f){ // Claude's lines -> the Blueline contract, in page-
   return{drawing:{id:f.id,file:P.name,width:W,height:H,metersPerPixel:mpp,scale:{method,text:raw.meta&&raw.meta.scale||null,estimated:est},title:raw.meta&&clean(raw.meta.title)||null,storeys:clamp(Math.round(+(raw.meta&&raw.meta.storeys)||1),1,6)},
     rooms,items,walls:[],texts:[],meta:{source:'claude',version:API_MODEL},_stats:{snapped,shift:snapped?shift/snapped:0,scaleNote:note,lines:raw.ok||0,bad:raw.bad||0,lg,ln,dropped:raw.rooms.length-rooms.length}};
 }
-async function apiRead(key,blob,prompt,onT,signal,usage){usage=usage||{};
-  const b64=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(',')[1]);fr.onerror=()=>rej({code:'transform_error'});fr.readAsDataURL(blob);});
-  let res;try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:API_MODEL,max_tokens:8000,stream:true,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/png',data:b64}},{type:'text',text:prompt}]}]})});}
-  catch(e){throw{code:e&&e.name==='AbortError'?'cancelled':'network'};}
-  if(res.status===429)throw{code:'rate_limited',retryAfter:+res.headers.get('retry-after')||0};
-  if(!res.ok){let m='HTTP '+res.status;try{const j=await res.json();if(j.error&&j.error.message)m=j.error.message;}catch(e){}throw{code:'api_error',message:m};}
-  const rd=res.body.getReader(),dec=new TextDecoder();let buf='',text='';
-  try{for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
-    while((i=buf.indexOf('\n\n'))>=0){const ev=buf.slice(0,i);buf=buf.slice(i+2);const dl=ev.split('\n').find(l=>l.startsWith('data:'));if(!dl)continue;let j;try{j=JSON.parse(dl.slice(5));}catch(e){continue;}
-      if(j.type==='message_start'&&j.message&&j.message.usage)usage.in=j.message.usage.input_tokens;
-      if(j.type==='message_delta'&&j.usage&&j.usage.output_tokens)usage.out=j.usage.output_tokens;
-      if(j.type==='content_block_delta'&&j.delta&&j.delta.type==='text_delta'){text+=j.delta.text;onT(text);}else if(j.type==='error')throw{code:'api_error',message:j.error&&j.error.message||'API error'};}}}
-  catch(e){if(e&&e.code)throw e;throw{code:e&&e.name==='AbortError'?'cancelled':'network'};}
-  return text;}
 const ERRS={cancelled:['Stopped.','stopped'],not_granted:['Claude was not allowed for this page.','not allowed'],sampling_disabled:['Claude is not available for this account here.','not available'],capability_disabled:['Claude cannot read images in this view.','no images'],images_unavailable:['Claude cannot read images in this view.','no images'],not_declared:['Claude cannot read images in this view.','no images'],capability_removed:['Claude cannot read images in this view.','no images'],rate_limited:['Claude is busy or a usage limit is reached. Try again in a little while.','busy'],session_expired:['Sign in to Claude again, then try again.','signed out'],image_rejected:['Claude could not take this image. Try a PNG or JPG under 20 MB.','image refused'],refused:['Claude declined to read this image.','declined'],empty_completion:['Claude did not return a reading. Try again.','no reading'],network:['Could not reach the Anthropic API from here.','offline'],not_plan:['This does not look like a floor plan.','not a plan'],no_rooms:['Claude found no rooms. Try a clearer floor plan.','no rooms'],nofile:['There is no image to send for this floor.','no image']};
 const errInfo=e=>e&&e.code==='api_error'?['Error: '+String(e.message||'error').slice(0,140),'API error']:(e&&ERRS[e.code])||['Something went wrong while reading. Try again.','error'];
 const HARD=/not_granted|sampling_disabled|disabled|unavailable|not_declared|removed/;
@@ -770,7 +754,7 @@ function fromTeamScene(scene,f){const[W,H]=f.img?[f.img.W,f.img.H]:[PW,PH],sx=W/
 
 /* ---------- the reading pool: several floors are read at the same time ---------- */
 const RQ=[];let RQrun=0,POOLCAP=0;
-function poolSize(){const n=CFG.reader==='api'?3:SAMPLER&&!CLAUDE_OFF?2:getKey()?4:2;return POOLCAP?Math.min(POOLCAP,n):n;}
+function poolSize(){const n=CFG.reader==='api'?3:2;return POOLCAP?Math.min(POOLCAP,n):n;}
 function queueRead(f){if(!f||f.deleted)return;if(!RQ.includes(f.id))RQ.push(f.id);f.status='queued';f.err=null;f.steps=[];f.rawTail=[];f.rt=null;f.usage=null;patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();pump();}
 function pump(){while(RQrun<poolSize()&&RQ.length){const f=FL[RQ.shift()];if(!f||f.deleted||f.status!=='queued')continue;RQrun++;readFloor(f).catch(e=>{console.warn(e);failRead(f,e);}).finally(()=>{RQrun--;pump();});}renderStatus();}
 samplerP.then(()=>pump());
@@ -796,24 +780,23 @@ async function readFloor(f){
   return readClaude(f);
 }
 async function readClaude(f){
-  const sampler=await samplerP,key=getKey(),useS=!!sampler&&!CLAUDE_OFF;
-  if(!useS&&!key){f.status='nokey';f.err='Reading uses Claude. In claude.ai it runs on your Claude account. Here, add an Anthropic API key (it stays in this browser).';patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();return;}
+  const sampler=await samplerP,useS=!!sampler&&!CLAUDE_OFF;
+  if(!useS){f.status='nokey';f.err='The Claude stand-in only runs inside claude.ai, on your Claude account. Here, choose "Our model" in Settings, or drop each plan with its schema JSON.';patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();return;}
   startRead(f);
-  const raw={meta:null,rooms:[],doors:[],wins:[],fix:[]},P=f.img,prompt=READ_PROMPT(P.W,P.H),usage={},via=useS?'your claude.ai account':'Anthropic API, key in this browser';
+  const raw={meta:null,rooms:[],doors:[],wins:[],fix:[]},P=f.img,prompt=READ_PROMPT(P.W,P.H),usage={},via='your claude.ai account';
   const st=rstep(f,'claude.read_plan','run',`${API_MODEL} · effort low · ${via} · sending the image and the tracing prompt…`);
   const live=w=>{const L=f.live;st.d=`${API_MODEL} · effort low · ${via} · ${w}: ${L.rooms} room${L.rooms===1?'':'s'}, ${L.doors} door${L.doors===1?'':'s'}, ${L.wins} window${L.wins===1?'':'s'}, ${L.fix} fixture${L.fix===1?'':'s'}`;};
   const parse=makeParser(raw,o=>{if(f.deleted)return;const L=f.live;L.n++;if(o.t==='room')L.rooms++;else if(o.t==='door')L.doors++;else if(o.t==='window')L.wins++;else if(o.t==='fix')L.fix++;if(o.t!=='meta'){f.trace.push(o);addLive(f,o);}
     f.rawTail.push(JSON.stringify(o).slice(0,160));if(f.rawTail.length>6)f.rawTail.shift();live('streaming JSON lines');patchSoon(f);trSoon();});
   const ctl=new AbortController();f.ctl=ctl;patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderReadBan();
-  try{const text=useS?(await sampler(prompt,{images:[P.blob],signal:ctl.signal,effort:'low',onText:({text})=>parse(text)})).text:await apiRead(key,P.blob,prompt,t=>parse(t),ctl.signal,usage);
+  try{const text=(await sampler(prompt,{images:[P.blob],signal:ctl.signal,effort:'low',onText:({text})=>parse(text)})).text;
     if(f.deleted)return;parse(text+'\n');parse.whole(text);
     const measured=usage.in!=null,tin=measured?usage.in:Math.round(P.W*P.H/750+prompt.length/3.6),tout=usage.out!=null?usage.out:Math.round(text.length/3.6);f.usage={in:tin,out:tout,measured};
     live('read');rstep(f,'claude.read_plan','ok',`${st.d} · ${fmtTok(tin)} tokens in, ${fmtTok(tout)} out ${measured?'(measured)':'(estimated)'}`);
     if(!raw.rooms.length)throw{code:raw.meta&&raw.meta.kind==='other'?'not_plan':'no_rooms'};
-    f.schema=toSchema(raw,P,f);f.ctl=null;schemaSteps(f);finishRead(f,useS?'Claude':'Claude (API key)');}
+    f.schema=toSchema(raw,P,f);f.ctl=null;schemaSteps(f);finishRead(f,'Claude');}
   catch(e){f.ctl=null;
-    if(e&&e.code==='rate_limited'){POOLCAP=1;if(!useS&&!f.retried&&!f.deleted){f.retried=true;rstep(f,'claude.read_plan','warn','Rate limited by the API. Reading one floor at a time from now on; this floor tries once more in a moment.');f.status='queued';f.rt=null;patchCard(f);renderStatus();
-      setTimeout(()=>{if(!f.deleted&&f.status==='queued'){if(!RQ.includes(f.id))RQ.push(f.id);pump();}},Math.max(4,e.retryAfter||10)*1000);return;}}
+    if(e&&e.code==='rate_limited')POOLCAP=1; // busy: read one floor at a time from now on, never retry in a loop
     if(useS&&e&&HARD.test(e.code||''))CLAUDE_OFF=true;
     const s2=f.steps.find(x=>x.k==='claude.read_plan');if(s2&&s2.s==='run')rstep(f,'claude.read_plan','err',errInfo(e)[0]);
     failRead(f,e);}
@@ -844,7 +827,7 @@ function finishRead(f,by){if(f.deleted)return;f.status='read';f.readBy=by;f.err=
   patchCard(f);if(f.id===ST.fid&&ST.view==='plan'){if(VB[f.id]&&VB[f.id].auto)delete VB[f.id];renderPlan();}sync3D();rerunAnswers();renderStatus();renderAskEmpty();trSoon();}
 function failRead(f,e){if(f.deleted)return;const[msg,short]=errInfo(e);if(f.rt&&!f.rt.e)f.rt.e=performance.now();
   if(e&&e.code==='cancelled'){f.status='idle';f.err='Stopped. Read it again when you are ready.';f.errShort='stopped';}
-  else if(CLAUDE_OFF&&!getKey()&&CFG.reader==='claude'){f.status='nokey';f.err=msg+' You can add an Anthropic API key instead.';f.errShort=short;}
+  else if(CLAUDE_OFF&&CFG.reader==='claude'){f.status='nokey';f.err=msg+' Choose "Our model" in Settings, or drop schema files.';f.errShort=short;}
   else{f.status='error';f.err=msg;f.errShort=short;}
   patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();}
 async function samplePng(f){const img=await svgImage(f);const c=document.createElement('canvas');c.width=PW;c.height=PH;c.getContext('2d').drawImage(img,0,0);return new Promise(r=>c.toBlob(r,'image/png'));}
@@ -1209,7 +1192,7 @@ function renderLegend(){const f=FL[ST.fid],el=$('#legend');if(!f||!f.schema){el.
 function renderReadBan(){const f=FL[ST.fid],el=$('#rdban');if(!f){el.hidden=true;return;}let h='',warn=false;
   if(f.status==='reading')h=`<span class="spin"></span><span>${f.t0?'Claude is reading this floor. Rooms, doors and windows appear as they are found.':'Reading the sample drawing…'}</span>${f.ctl?`<button class="btn sm" data-act="stop" data-f="${f.id}">Stop</button>`:''}`;
   else if(f.status==='queued')h=`<span class="spin"></span><span>Waiting for a free reader. Up to ${poolSize()} floors are read at the same time.</span>`;
-  else if(f.status==='nokey'){warn=true;h=SAMPLER&&!CLAUDE_OFF?`<span>${esc(f.err)}</span><button class="btn sm pri" data-act="reread" data-f="${f.id}">Try again</button>`:`<span>${esc(f.err)}</span><input class="kin" id="keyin" type="password" placeholder="Anthropic API key" autocomplete="off" spellcheck="false" aria-label="Anthropic API key"><button class="btn sm pri" data-act="savekey">Read</button>`;}
+  else if(f.status==='nokey'){warn=true;h=SAMPLER&&!CLAUDE_OFF?`<span>${esc(f.err)}</span><button class="btn sm pri" data-act="reread" data-f="${f.id}">Try again</button>`:`<span>${esc(f.err)}</span><button class="btn sm pri" data-act="settings">Settings</button>`;}
   else if(f.status==='error'||f.status==='idle'){warn=f.status==='error';h=`<span>${esc(f.err||'Not read yet.')}</span><button class="btn sm pri" data-act="reread" data-f="${f.id}">${f.status==='idle'?'Read':'Try again'}</button>`;}
   el.hidden=!h;el.classList.toggle('warn',warn);el.innerHTML=h;}
 let scanRaf=0;
@@ -1492,22 +1475,20 @@ function traceReadingHTML(){const b=curB(),now=performance.now(),fs=b.floors.map
    ===================================================================== */
 function modal(html){$('#mbox').innerHTML=html;$('#modal').hidden=false;setTimeout(()=>{const el=$('#mbox').querySelector('input:not([type=radio]),button');if(el)el.focus();},0);}
 function closeModal(){$('#modal').hidden=true;$('#mbox').innerHTML='';}
-function settingsModal(){const k=getKey(),viaAcct=SAMPLER&&!CLAUDE_OFF,inC=!!window.claude;
+function settingsModal(){const viaAcct=SAMPLER&&!CLAUDE_OFF,inC=!!window.claude;
   modal(`<h2>Settings</h2><p class="sub">Choose what reads the floor plans. Everything after reading stays the same: answers with proof, 3D, and the trace.</p>
    <h3>Reader</h3>
    <label class="opt ${CFG.reader==='api'?'on':''}"><input type="radio" name="rd" value="api" ${CFG.reader==='api'?'checked':''}><div><b>Our model</b>
      <span>The team's model server. Each floor goes to <code>/api/plan</code> and comes back as a scene from <code>/api/scene</code>; a server with <code>/analyze</code> that returns a schema works too. 3 floors at a time.${inC?' Inside claude.ai this page cannot call other servers: download it, or serve it from the model server.':' The server must allow CORS, or serve this page itself.'}</span>
      <div class="mrow"><input class="fld" id="ep" value="${esc(CFG.endpoint)}" aria-label="Model server address"><button class="btn sm" id="ping" type="button">Test</button></div><span id="pingr"></span></div></label>
    <label class="opt ${CFG.reader==='claude'?'on':''}"><input type="radio" name="rd" value="claude" ${CFG.reader==='claude'?'checked':''}><div><b>Claude, as a stand-in until our model is ready</b>
-     <span>${viaAcct?'Runs on your Claude account in claude.ai, 2 floors at a time.':'Needs an Anthropic API key, kept in this browser only. 4 floors at a time.'}</span>
-     ${viaAcct?'':`<div class="mrow"><input class="fld" id="kin" type="password" placeholder="Anthropic API key" autocomplete="off" spellcheck="false" aria-label="Anthropic API key"><button class="btn sm" id="ksave" type="button">${k?'Replace':'Save'}</button>${k?'<button class="btn sm" id="kdel" type="button">Remove</button>':''}</div><span>${k?'A key is saved in this browser.':'No key saved yet.'}</span>`}</div></label>
+     <span>${viaAcct?'Runs on your Claude account in claude.ai, 2 floors at a time.':'Runs only inside claude.ai, on your Claude account.'} No API key is used or stored.</span>
+     </div></label>
    <p class="sub">Already have the model's output? No reader is needed: drop each plan image together with its schema JSON (same file name), or the JSON alone.</p>
    <div class="mrow"><button class="btn sm" data-act="readall">Read all floors again</button></div>
    <h3>Data</h3><div class="mrow"><button class="btn sm" data-act="exportjson">Export floors (JSON)</button><button class="btn sm" data-act="exportcsv">Export quantities (CSV)</button></div>
    <div class="mact"><button class="btn pri" data-act="close">Done</button></div>`);
   $$('#mbox input[name=rd]').forEach(r=>r.onchange=()=>{CFG.reader=r.value;store.set('bl_reader',CFG.reader);$$('#mbox .opt').forEach(o=>o.classList.toggle('on',o.querySelector('input[type=radio]').checked));renderStatus();pump();});
-  const ks=$('#ksave');if(ks)ks.onclick=e=>{e.preventDefault();const v=$('#kin').value.trim();if(!v){$('#kin').focus();return;}setKey(v);toast('Key saved in this browser.');requeueNokey();settingsModal();};
-  const kd=$('#kdel');if(kd)kd.onclick=e=>{e.preventDefault();setKey('');settingsModal();renderStatus();};
   $('#ep').onchange=()=>{CFG.endpoint=$('#ep').value.trim()||CFG.endpoint;store.set('bl_endpoint',CFG.endpoint);};
   $('#ping').onclick=async e=>{e.preventDefault();CFG.endpoint=$('#ep').value.trim()||CFG.endpoint;store.set('bl_endpoint',CFG.endpoint);const out=$('#pingr');out.textContent='Testing…';
     if(inC){out.textContent='claude.ai blocks calls from this page to other servers. Download the page and open it locally, or serve it from the model server.';return;}
@@ -1522,7 +1503,7 @@ function helpModal(){modal(`<h2>How Blueline works</h2>
   <h3>Shortcuts</h3><div class="keys"><kbd>P</kbd><span>Plan view</span><kbd>3</kbd><span>3D view</span><kbd>T</kbd><span>Show or hide the trace</span><kbd>R</kbd><span>Show or hide what was read</span><kbd>↑ ↓</kbd><span>Floor above or below</span><kbd>Alt ↑ ↓</kbd><span>Move the floor up or down</span><kbd>F</kbd><span>Frame the view</span><kbd>Delete</kbd><span>Delete the floor (with undo)</span></div>
   <div class="mact"><button class="btn pri" data-act="close">Got it</button></div>`);}
 function requeueNokey(){Object.values(FL).forEach(f=>{if(!f.deleted&&f.status==='nokey')queueRead(f);});renderStatus();}
-function readerLabel(){return CFG.reader==='api'?'our model':SAMPLER&&!CLAUDE_OFF?'Claude stand-in':getKey()?'Claude stand-in (API key)':'Claude stand-in (needs access)';}
+function readerLabel(){return CFG.reader==='api'?'our model':SAMPLER&&!CLAUDE_OFF?'Claude stand-in':'Claude stand-in (claude.ai only)';}
 function renderStatus(){const fs=Object.values(FL).filter(f=>!f.deleted),rd=fs.filter(isRead).length,ing=fs.filter(f=>f.status==='reading').length,wait=fs.filter(f=>f.status==='queued').length;
   $('#stat').textContent=fs.length?`${rd}/${fs.length} floors read${ing||wait?` · reading ${ing}${wait?`, ${wait} waiting`:''}, up to ${poolSize()} at a time`:''} · reader: ${readerLabel()}`:`Reader: ${readerLabel()}`;
   const tl=$('#trLive');if(tl)tl.hidden=!(ing||wait);}
@@ -1557,7 +1538,7 @@ document.addEventListener('click',e=>{
     case 'zi':zoomAt(1/1.3);break;case 'zo':zoomAt(1.3);break;case 'fit':fitPlan();drawEvidence();break;
     case 'trace':ST.trace=!ST.trace;renderVnav();drawTrace();renderLegend();break;
     case 'desel':ST.sel=null;drawHit();renderInspect();break;
-    case 'savekey':{const el=$('#keyin'),v=el?el.value.trim():'';if(!v){if(el)el.focus();break;}setKey(v);toast('Key saved in this browser.');requeueNokey();break;}
+    case 'settings':settingsModal();break;
     case 'clearans':clearActive();break;
     case 'show':activate(+t.dataset.ans);break;
     case 'bar':{const A=ANS[t.dataset.ans];if(A)ST.active=A;selectFloor(t.dataset.f);refreshAnswerViews();break;}

@@ -4,14 +4,14 @@ Ask a whole construction project a question and see exactly where every answer c
 
 Junction 2026, Stoa challenge "Make Blueprints Talk". Single self-contained file: open `index.html` in a browser.
 
-Version: **V6, 14 Nov 2026**
+Version: **V6.1, 14 Nov 2026**
 
 ## What the interface does
 
 The interface does not read drawings itself. A reader turns each floor plan into a **schema** (rooms, doors, windows, fixtures, scale). Everything after that is the interface: plan overlay, 3D, answers with proof, and the trace.
 
 1. **Add floor plans.** One image per floor, or a PDF with a page per floor. Each floor becomes a card, ordered by the number in the file name (`krs1`, `floor-2`...). Drag to reorder, drop on a building tab to move, double-click to rename, delete has undo.
-2. **Reading, in parallel.** Floors are read at the same time: 3 with our model server, 2 on a claude.ai account, 4 with an API key. A rate limit drops it to one at a time; there is no retry loop.
+2. **Reading, in parallel.** Floors are read at the same time: 3 with our model server, 2 on a claude.ai account. A rate limit drops it to one at a time; there is no retry loop.
 3. **Plan and 3D.** Plan shows one floor with what was read in blue. 3D stacks the building and is built from the schema alone (see below).
 4. **Ask.** About a floor, the building, or all buildings. Answers are plain code over the schemas, so asking makes no model calls. Every counted item is numbered on its floor.
 5. **Trace (T).** A panel under the viewer shows every step, live:
@@ -24,7 +24,7 @@ The interface does not read drawings itself. A reader turns each floor plan into
 |---|---|---|
 | **Our model** | The team's model server. `POST /api/plan` (raw image, `X-Filename`), then `GET /api/scene?id=` | No |
 | **Schema files** | Drop each plan image with its schema JSON of the same name (`plan_krs1.png` + `plan_krs1.json`), or the JSON alone | No |
-| **Claude** | Stand-in until our model is ready | Yes |
+| **Claude** | Stand-in until our model is ready. Runs only inside claude.ai, on your own Claude account | Yes, no API key |
 
 Schema files can be in either format:
 - the team's schematic format (`schema.md` in reinforcement-testing): `rooms[].polygon`, `number`, `label`, `printed_area_m2`, `apartment`, `items[].type` with a `point`, `scale.px_per_m`, `apartments[]`
@@ -88,7 +88,8 @@ interface BluelineSchema {
 ## Honesty notes
 
 - The sample building is generated, so its "reading" is exact by construction and makes no model call. The trace says so.
-- Claude token counts are measured with an API key and estimated on a claude.ai account; the trace labels which.
+- No API key is used or stored. Any key saved by an earlier version is deleted from the browser when the page loads.
+- Claude token counts in the trace are estimates.
 - Areas are given only where they are printed or the drawing has a scale; otherwise the answer says it cannot verify.
 
 ## Licence

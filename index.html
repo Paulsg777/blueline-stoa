@@ -628,14 +628,16 @@ async function prepDrawable(src,nw,nh,name){
   const blob=await new Promise(r=>c.toBlob(r,'image/png'));
   return{name,W,H,blob,thick,canvas:c,url:URL.createObjectURL(blob),stats:{nw:Math.round(nw),nh:Math.round(nh),thr:t,k:kk,ms:Math.round(performance.now()-tp0)}};
 }
+/* our reader reads text on the sheet, so it gets the original resolution; the shrunk copy is only for display and Claude */
+const fullRes=P=>!P.orig?Promise.resolve(P.blob):P.orig instanceof Blob?Promise.resolve(P.orig):new Promise(r=>P.orig.toBlob(r,'image/png'));
 async function prepFile(file){const url=URL.createObjectURL(file);
-  try{const img=new Image();img.src=url;await img.decode();let nw=img.naturalWidth,nh=img.naturalHeight;if(nw<16||nh<16){nw=1600;nh=1200;}return await prepDrawable(img,nw,nh,file.name);}
+  try{const img=new Image();img.src=url;await img.decode();let nw=img.naturalWidth,nh=img.naturalHeight;if(nw<16||nh<16){nw=1600;nh=1200;}return Object.assign(await prepDrawable(img,nw,nh,file.name),{orig:file});}
   finally{setTimeout(()=>URL.revokeObjectURL(url),1000);}}
 const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/';
 async function pdfPages(file){ // every page of a PDF becomes one floor
   const lib=await import(PDFJS+'pdf.min.mjs');lib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.mjs';
   const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false}).promise,out=[];
-  for(let p=1;p<=Math.min(doc.numPages,12);p++){const pg=await doc.getPage(p),v0=pg.getViewport({scale:1}),s=Math.min(3,2000/Math.max(v0.width,v0.height)),vp=pg.getViewport({scale:s});
+  for(let p=1;p<=Math.min(doc.numPages,12);p++){const pg=await doc.getPage(p),v0=pg.getViewport({scale:1}),s=Math.min(6,6000/Math.max(v0.width,v0.height)),vp=pg.getViewport({scale:s});
     const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
     await pg.render({canvasContext:g,viewport:vp}).promise;out.push({name:`${file.name.replace(/\.pdf$/i,'')} p${p}`,canvas:c,page:p,pages:doc.numPages});}
   return out;
@@ -820,7 +822,7 @@ async function readClaude(f){
 }
 /* our own model: the team server (POST /api/plan, GET /api/scene), or any server with /analyze -> schema.json */
 async function readApi(f){startRead(f);f.live=null;const ctl=new AbortController();f.ctl=ctl;patchCard(f);const ep=CFG.endpoint.replace(/\/$/,'');
-  try{const blob=f.img?f.img.blob:f.sample?await samplePng(f):null;if(!blob)throw{code:'nofile'};
+  try{const blob=f.img?await fullRes(f.img):f.sample?await samplePng(f):null;if(!blob)throw{code:'nofile'};
     rstep(f,'model.upload','run',`POST ${ep}/api/plan · ${fmtBytes(blob.size)}`);
     let res;try{res=await fetch(ep+'/api/plan',{method:'POST',body:blob,headers:{'X-Filename':(f.file||'plan').replace(/[^\w.\- ]/g,'_')+'.png'},signal:ctl.signal});}
     catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'api_error',message:window.claude?'claude.ai does not let this page call other servers. Download the page and open it locally.':`could not reach ${ep}. Is it running, with CORS allowed?`};}
@@ -1159,7 +1161,7 @@ async function addFiles(files,o={}){
   if(srcs.length>1&&srcs.every(s=>guessLevel(s.name)!=null))srcs.sort((a,c)=>guessLevel(a.name)-guessLevel(c.name));
   else if(srcs.length>1&&!srcs.some(s=>s.canvas))srcs.sort((a,c)=>a.name.localeCompare(c.name,undefined,{numeric:true}));
   const made=[];
-  for(const s of srcs){let P;try{P=s.canvas?await prepDrawable(s.canvas,s.canvas.width,s.canvas.height,s.name):await prepFile(s.file);}catch(e){bad.push(s.name);continue;}
+  for(const s of srcs){let P;try{P=s.canvas?Object.assign(await prepDrawable(s.canvas,s.canvas.width,s.canvas.height,s.name),{orig:s.canvas}):await prepFile(s.file);}catch(e){bad.push(s.name);continue;}
     const k=base(s.name),j=js[k];if(j)delete js[k];made.push(makeFloor(b.id,{src:'upload',file:s.name,img:P,schemaJson:j||null,meta:{name:s.file?s.file.name:s.name,bytes:s.file?s.file.size:null,page:s.page||null,pages:s.pages||null}}));}
   Object.keys(js).forEach(k=>made.push(makeFloor(b.id,{src:'json',file:k+'.json',schemaJson:js[k]})));
   if(!made.length){toast(bad.length?`Could not add ${bad.join(', ')}.`:'Add PNG, JPG, SVG or PDF floor plans.');return;}
@@ -1433,7 +1435,7 @@ function ask(q,scope){q=q.trim();if(!q)return;const ms=$('#msgs');ms.querySelect
    Schematic first (no model call), then a model-planned set of local tools, then the model's own answer marked "check". */
 async function askServer(q,d){const f=FL[ST.fid];if(!f||!f.img||!f.img.blob)return;
   const note=document.createElement('div');note.className='atext';note.textContent='Asking the drawing itself (local tools on this sheet)…';d.appendChild(note);
-  try{const fd=new FormData();fd.append('file',f.img.blob,f.file||'sheet.png');fd.append('question',q);
+  try{const fd=new FormData();fd.append('file',await fullRes(f.img),f.file||'sheet.png');fd.append('question',q);
     const r=await fetch(CFG.endpoint.replace(/\/$/,'')+'/ask',{method:'POST',body:fd}),j=await r.json().catch(()=>({}));
     if(!r.ok||j.error)throw new Error(j.error||('the server answered '+r.status));
     if(j.answer==null)throw new Error('no answer the tools could support');

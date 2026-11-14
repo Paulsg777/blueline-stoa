@@ -63,8 +63,8 @@ body.dragui,body.dragui *{cursor:grabbing!important;user-select:none!important}
 .tgh{display:flex;align-items:center;gap:8px;color:#E0E0E0;font-weight:600;margin:12px 0 2px}
 .tgh:first-child{margin-top:6px}
 .tgh .asc{font-weight:400}
-.ts{display:grid;grid-template-columns:12px 190px minmax(0,1fr) 70px;gap:12px;align-items:start;padding:7px 0;border-bottom:1px solid #2B2B2B}
-.ts code{font:500 12.5px/1.5 'JetBrains Mono',monospace;color:var(--blue2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts{display:grid;grid-template-columns:12px 150px minmax(0,1fr) 64px;gap:12px;align-items:start;padding:7px 0;border-bottom:1px solid #2B2B2B}
+.ts code{font:500 13px/1.5 Inter,sans-serif;color:#E2E2E2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ts .td{color:#D2D2D2;line-height:1.5;font-size:13.5px;word-break:break-word}
 .ts .tm{font:12px/1.6 'JetBrains Mono',monospace;color:var(--fnt);text-align:right;white-space:nowrap}
 .tdot{width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--ok)}
@@ -338,7 +338,7 @@ details.how summary:hover{color:var(--ink)}
       <button id="v3d" role="tab" aria-selected="false" title="3D view (3)"></button>
     </div>
     <span class="sp"></span>
-    <button class="hb" id="trBtn" title="Show every step behind each reading and answer (T)" aria-pressed="false"><span id="trIc"></span><span class="lbl">Trace</span><span class="live" id="trLive" hidden></span></button>
+    <button class="hb" id="trBtn" title="Show every step behind each reading and answer (T)" aria-pressed="false"><span id="trIc"></span><span class="lbl">How it works</span><span class="live" id="trLive" hidden></span></button>
     <button class="hb icon" id="helpBtn" aria-label="How it works" title="How it works"></button>
     <button class="hb icon" id="setBtn" aria-label="Settings" title="Settings"></button>
     <button class="hb pri" id="upBtn"><span id="upIc"></span><span class="lbl">Add floor plans</span></button>
@@ -756,15 +756,15 @@ function failRead(f,e){if(f.deleted)return;const[msg,short]=errInfo(e);if(f.rt&&
   else{f.status='error';f.err=msg;f.errShort=short;}
   patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();}
 function tidySchema(f){const sc=f.schema,R=sc.rooms;if(R.length<2&&!sc.items.length)return;
-  const W=sc.drawing.width,H=sc.drawing.height,mpp=sc.drawing.metersPerPixel,tol=mpp?1.5/mpp:Math.max(W,H)*.03;
+  const W=sc.drawing.width,H=sc.drawing.height,mpp=sc.drawing.metersPerPixel,tol=mpp?.8/mpp:Math.max(W,H)*.015;
   const bb=R.map(r=>{let a=1e9,b=1e9,c=-1e9,d=-1e9;r.polygon.forEach(([x,y])=>{a=Math.min(a,x);b=Math.min(b,y);c=Math.max(c,x);d=Math.max(d,y);});return[a,b,c,d];});
-  const thin=r=>{const i=R.indexOf(r),q=bb[i],w=q[2]-q[0],h=q[3]-q[1],ar=mpp?shoelace(r.polygon)*mpp*mpp:null;return Math.max(w,h)/Math.max(1,Math.min(w,h))>14||(ar!=null&&ar<.4);};
+  const thin=r=>{const i=R.indexOf(r),q=bb[i],w=q[2]-q[0],h=q[3]-q[1],ar=mpp?shoelace(r.polygon)*mpp*mpp:null;return Math.max(w,h)/Math.max(1,Math.min(w,h))>10||(ar!=null&&ar<.5)||String(r.label||'').trim().split(/\s+/).length>4;}; // text boxes and notes are not rooms
   const par=R.map((_,i)=>i),find=i=>par[i]===i?i:(par[i]=find(par[i]));
   for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const a=bb[i],b=bb[j];if(a[0]-tol<=b[2]&&b[0]-tol<=a[2]&&a[1]-tol<=b[3]&&b[1]-tol<=a[3])par[find(i)]=find(j);}
   const tot={};R.forEach((r,i)=>{if(thin(r))return;const k=find(i);tot[k]=(tot[k]||0)+shoelace(r.polygon);});
   const main=Object.keys(tot).sort((a,b)=>tot[b]-tot[a])[0];if(main==null)return;
   const keep=R.filter((r,i)=>find(i)==main&&!thin(r));let a=1e9,b=1e9,c=-1e9,d=-1e9;keep.forEach(r=>{const q=bb[R.indexOf(r)];a=Math.min(a,q[0]);b=Math.min(b,q[1]);c=Math.max(c,q[2]);d=Math.max(d,q[3]);});
-  const ids=new Set(keep.map(r=>r.id)),items=sc.items.filter(it=>{const x=(it.box[0]+it.box[2])/2,y=(it.box[1]+it.box[3])/2;return x>=a-tol&&x<=c+tol&&y>=b-tol&&y<=d+tol;});
+  const ids=new Set(keep.map(r=>r.id)),near=mpp?.6/mpp:tol,items=sc.items.filter(it=>{const q=[(it.box[0]+it.box[2])/2,(it.box[1]+it.box[3])/2];return keep.some(r=>inPoly(q,r.polygon)||edgeD(q,r.polygon)<=near+Math.max(it.box[2]-it.box[0],it.box[3]-it.box[1])/2);});
   const dr=R.length-keep.length,di=sc.items.length-items.length;
   if(dr||di){sc.rooms=keep;sc.items=items.map(it=>({...it,roomIds:(it.roomIds||[]).filter(id=>ids.has(id))}));}
   rstep(f,'drop_outside',dr||di?'warn':'ok',dr||di?`Left out ${dr} room${dr===1?'':'s'} and ${di} item${di===1?'':'s'} outside the floor plan (title block, legend, notes or footnotes).`:'Everything the model returned sits inside the floor plan.');}
@@ -1013,7 +1013,7 @@ function selectFloor(fid,o={}){
   $$('.fc').forEach(c=>{const on=c.dataset.f===fid;c.classList.toggle('on',on);c.setAttribute('aria-selected',on);});
   if(o.scroll!==false)document.querySelector(`.fc[data-f="${fid}"]`)?.scrollIntoView({block:'nearest'});
   if(ST.scopeMode==='auto')autoScope();renderScope();renderAskEmpty();
-  if(ST.view==='plan')renderPlan();else{if(T3.iso)sync3D();paint3D();labels3D();if(!o.from3d)focusFloor3D(fid);}
+  if(ST.view==='plan')renderPlan();else{if(T3.iso)sync3D();paint3D();pins3D();labels3D();if(!o.from3d)focusFloor3D(fid);}
   trSoon();
 }
 function setBuilding(id){if(!bld(id))return;ST.bId=id;const b=curB();ST.fid=b.floors.length?b.floors[b.floors.length-1]:null;ST.sel=null;T3.framed=false;if(ST.scopeMode==='auto')autoScope();renderAll();}
@@ -1180,7 +1180,7 @@ function init3D(OrbitControls){const THREE=T3.THREE,c=$('#c3');
   const root=new THREE.Group();sc.add(root);
   const ctl=new OrbitControls(cam,c);Object.assign(ctl,{enableDamping:true,dampingFactor:.09,screenSpacePanning:true,maxPolarAngle:Math.PI*.495,minDistance:3,maxDistance:500});
   Object.assign(T3,{R,sc,cam,ctl,root,ray:new THREE.Raycaster(),ndc:new THREE.Vector2(),v3:new THREE.Vector3(),
-    gPin:new THREE.CylinderGeometry(.09,.09,1.3,8),gHead:new THREE.SphereGeometry(.24,14,10),mPin:new THREE.MeshBasicMaterial({color:0x5B95FF}),
+    gPin:new THREE.CircleGeometry(.32,24),gHead:new THREE.SphereGeometry(.13,16,12),mPin:new THREE.MeshBasicMaterial({color:0x8DB6FF,transparent:true,opacity:.95,depthTest:false}),
     mRoom:new THREE.MeshBasicMaterial({color:0x5B95FF,transparent:true,opacity:.42,depthWrite:false,side:THREE.DoubleSide}),gBox:new THREE.BoxGeometry(1,1,1)});
   T3.shared=new Set([T3.gPin,T3.gHead,T3.mPin,T3.mRoom,T3.gBox]);
   T3.mGlass=new THREE.MeshLambertMaterial({color:0x8DB6FF,transparent:true,opacity:.38,depthWrite:false});T3.mFix=new THREE.MeshLambertMaterial({color:0xE6E6E6});T3.mDoor=new THREE.MeshLambertMaterial({color:0x8A6A4A});T3.mRT={};
@@ -1196,7 +1196,7 @@ function size3D(){if(!T3.R)return;const el=$('#vw'),w=el.clientWidth||800,h=el.c
 function pick3D(e){const r=$('#c3').getBoundingClientRect();T3.ndc.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);T3.ray.setFromCamera(T3.ndc,T3.cam);
   const objs=[...T3.G.values()].filter(G=>G.g.visible).map(G=>G.pick),hit=T3.ray.intersectObjects(objs,false)[0];return hit?hit.object.userData.fid:null;}
 function mppOf(f){let m=f.schema&&f.schema.drawing.metersPerPixel;
-  if(m&&f.schema.rooms.length&&!f.sample){const c=cropOf(f),ext=Math.max(c[2]-c[0],c[3]-c[1])*m;if(ext<5||ext>250)m=25/Math.max(c[2]-c[0],c[3]-c[1]);} // a scale that makes the floor 2 m or 2 km wide is wrong: draw it at a plausible size
+  if(m&&f.schema.rooms.length&&!f.sample){const c=cropOf(f),ext=Math.max(c[2]-c[0],c[3]-c[1])*m;if(ext<6||ext>120)m=22/Math.max(c[2]-c[0],c[3]-c[1]);} // a scale that makes the floor 2 m or 2 km wide is wrong: draw it at a plausible size
   if(m)return m;if(f.sample)return 1/PPM;
   const ms=bld(f.bId).floors.map(id=>FL[id].schema&&FL[id].schema.drawing.metersPerPixel).filter(Boolean).sort((a,b)=>a-b);if(ms.length)return ms[ms.length>>1];const[W,H]=dims(f);return 24/Math.max(W,H);}
 /* ---------- 3D from the schema alone. Rooms are filled on a fine grid, the band around them
@@ -1290,15 +1290,15 @@ function sync3D(){if(!T3.ok)return;const b=curB(),ids=new Set(b.floors);
   for(const[fid,G]of T3.G)if(!ids.has(fid)){T3.root.remove(G.g);disposeObj(G.g);T3.G.delete(fid);}
   b.floors.forEach((fid,i)=>{const G=build3DFloor(FL[fid]);G.ty=i*FH*(1+T3.spread*2);if(G.y==null){G.y=G.ty;G.g.position.y=G.y;}G.g.visible=!T3.iso||fid===ST.fid;});
   pins3D();paint3D();labels3D(true);roomLabels3D();if(T3.on&&!T3.framed&&b.floors.length){frame3D(false);T3.framed=true;}
-  $('#hint3').innerHTML=b.floors.length?'Drag to turn · scroll to zoom · <b>click</b> a floor to open it':'';}
+  $('#hint3').innerHTML='';}
 function paint3D(){if(!T3.ok)return;for(const[fid,G]of T3.G){const sel=fid===ST.fid,hov=fid===T3.hover||fid===T3.hoverList;
   G.mW.color.setHex(sel?0xF4F7FF:hov?0xD8E4FA:0xB8B8B8);G.mE.opacity=sel?.95:hov?.85:.28;G.mE.color.setHex(sel||hov?0x8DB6FF:0x5B95FF);G.mP.opacity=sel?1:.82;}}
-function pins3D(){if(!T3.ok)return;const THREE=T3.THREE,A=ST.active,key=A?A.n+':'+A.rv:'none';
+function pins3D(){if(!T3.ok)return;const THREE=T3.THREE,A=ST.active,key=(A?A.n+':'+A.rv:'none')+':'+ST.fid;
   for(const[fid,G]of T3.G){if(G.pinKey===key)continue;G.pinKey=key;G.pins.children.slice().forEach(o=>{G.pins.remove(o);disposeObj(o);});
-    const p=A?activeN(fid):null,f=FL[fid];if(!p||!p.ev.length||!f.schema)continue;const sc=f.schema,mpp=G.mpp;
+    const p=A&&fid===ST.fid?activeN(fid):null,f=FL[fid];if(!p||!p.ev.length||!f.schema)continue;const sc=f.schema,mpp=G.mpp;
     const its=p.ev.filter(e=>e.type==='item').map(e=>sc.items.find(i=>i.id===e.id)).filter(Boolean);
     if(its.length){const a=new THREE.InstancedMesh(T3.gPin,T3.mPin,its.length),b=new THREE.InstancedMesh(T3.gHead,T3.mPin,its.length),M=new THREE.Matrix4();
-      its.forEach((it,i)=>{const x=(it.box[0]+it.box[2])/2*mpp-G.ox,z=(it.box[1]+it.box[3])/2*mpp-G.oz;M.makeTranslation(x,WH+.65,z);a.setMatrixAt(i,M);M.makeTranslation(x,WH+1.35,z);b.setMatrixAt(i,M);});
+      its.forEach((it,i)=>{const x=(it.box[0]+it.box[2])/2*mpp-G.ox,z=(it.box[1]+it.box[3])/2*mpp-G.oz;M.makeRotationX(-Math.PI/2).setPosition(x,.05,z);a.setMatrixAt(i,M);M.makeTranslation(x,1.1,z);b.setMatrixAt(i,M);});a.renderOrder=b.renderOrder=5;
       a.instanceMatrix.needsUpdate=true;b.instanceMatrix.needsUpdate=true;G.pins.add(a,b);}
     p.ev.filter(e=>e.type==='room').forEach(e=>{const r=sc.rooms.find(x=>x.id===e.id);if(!r)return;const sh=new THREE.Shape(r.polygon.map(q=>new THREE.Vector2(q[0]*mpp-G.ox,-(q[1]*mpp-G.oz))));
       const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),T3.mRoom);m.rotation.x=-Math.PI/2;m.position.y=.06;G.pins.add(m);});}}
@@ -1306,7 +1306,7 @@ function labels3D(rebuild){if(!T3.ok)return;const box=$('#lbl3'),b=curB();
   if(rebuild||box.children.length!==b.floors.length)box.innerHTML=b.floors.map(fid=>`<button class="l3" data-act="sel3" data-f="${fid}"></button>`).join('');
   b.floors.forEach(fid=>{const el=box.querySelector(`[data-f="${fid}"]`);if(!el)return;const f=FL[fid],p=activeN(fid);
     el.innerHTML=`<span class="st ${f.status}"></span><span>${esc(fname(f))}</span>${p?`<b>${fmtBadge(p.val)}</b>`:''}`;el.classList.toggle('on',fid===ST.fid);el.classList.toggle('hv',fid===T3.hover);});}
-function roomLabels3D(){const box=$('#rlbl3');if(!box)return;const G=T3.ok&&T3.iso?T3.G.get(ST.fid):null,k=G?ST.fid+':'+G.key:'';if(box.dataset.k===k)return;box.dataset.k=k;
+function roomLabels3D(){const box=$('#rlbl3');if(!box)return;box.innerHTML='';return;const G=T3.ok&&T3.iso?T3.G.get(ST.fid):null,k=G?ST.fid+':'+G.key:'';if(box.dataset.k===k)return;box.dataset.k=k;
   box.innerHTML=G?G.rl.map(r=>`<span class="rl">${esc(r.t)}${r.a?` <i>${r.a}</i>`:''}</span>`).join(''):'';}
 function placeLabels(){const box=$('#lbl3'),w=box.clientWidth,h=box.clientHeight;for(const[fid,G]of T3.G){const el=box.querySelector(`[data-f="${fid}"]`);if(!el)continue;
   if(!G.g.visible){el.style.display='none';continue;}T3.v3.set(G.w/2+.4,G.y+.9,G.d/2).project(T3.cam);
@@ -1402,12 +1402,14 @@ const fmtScale=m=>`1 px = ${(m*100).toFixed(2)} cm`;
 const anyReading=()=>Object.values(FL).some(f=>!f.deleted&&(f.status==='reading'||f.status==='queued'));
 let TRraf=0;
 function trSoon(){if(!ST.trOpen||TRraf)return;TRraf=requestAnimationFrame(()=>{TRraf=0;renderTrace();});}
-function setTrace(open,tab){if(open!=null){ST.trOpen=!!open;store.set('bl_tr',ST.trOpen);}if(tab)ST.trTab=tab;
+function setTrace(open,tab){if(open!=null){ST.trOpen=!!open;store.set('bl_tr2',ST.trOpen);}if(tab)ST.trTab=tab;
   $('#trace').hidden=!ST.trOpen;$('#trBtn').classList.toggle('on',ST.trOpen);$('#trBtn').setAttribute('aria-pressed',String(ST.trOpen));renderTrace();}
 function renderTrace(){if(!ST.trOpen)return;const live=anyReading();
   $('#ttabs').innerHTML=[['answer','Answer'],['reading','Reading']].map(([k,l])=>`<button type="button" data-tt="${k}" class="${ST.trTab===k?'on':''}" aria-pressed="${ST.trTab===k}">${l}${k==='reading'&&live?'<i class="tl"></i>':''}</button>`).join('');
   $('#trb').innerHTML=ST.trTab==='reading'?traceReadingHTML():traceAnswerHTML();}
-function stepHTML(s){return`<div class="ts ${s.s||'ok'}"><span class="tdot"></span><code title="${esc(s.k)}">${esc(s.k)}</code><span class="td">${esc(s.d||'')}</span><span class="tm">${s.s==='run'?fmtMs(performance.now()-s.t0):s.ms!=null?fmtMs(s.ms):''}</span></div>`;}
+const STEPN={parse_question:'Question',select_floors:'Floors used',verify:'Check',cost:'Cost',count_storeys:'Storeys',count_floors:'Floors','model.ask':'Asked our model',load_file:'File',prepare_image:'Image',load_sample:'Sample','load_schema':'Schema file','model.upload':'Sent to our model','model.scene':'Model result','model.analyze':'Model result',parse_lines:'Parsed',snap_outlines:'Outlines',detect_scale:'Scale',link_items:'Rooms and items',drop_outside:'Clean-up',build_3d:'3D',sum_floors:'Total',compare_floors:'Compared'};
+const stepName=k=>STEPN[k]||(/^count_items/.test(k)?'Counted':/^count_rooms/.test(k)?'Counted rooms':/^count_apartments/.test(k)?'Apartments':/area/.test(k)?'Measured':k);
+function stepHTML(s){return`<div class="ts ${s.s||'ok'}"><span class="tdot"></span><code title="${esc(s.k)}">${esc(stepName(s.k))}</code><span class="td">${esc(s.d||'')}</span><span class="tm">${s.s==='run'?fmtMs(performance.now()-s.t0):s.ms!=null?fmtMs(s.ms):''}</span></div>`;}
 function traceAnswerHTML(){const ns=Object.keys(ANS).map(Number),A=ANS[ST.trN]||(ns.length?ANS[Math.max(...ns)]:null);
   if(!A)return`<div class="tempty">Ask a question and every step shows here: how the question was read, which floors were used, each count or area with the items behind it, the check, and what it cost. Answers are plain code over the schema, so asking makes no model calls.</div>`;
   const val=A.server?`${typeof A.server.answer==='number'?Math.round(A.server.answer*100)/100:A.server.answer} ${A.server.unit||''}`:A.kind==='nope'?'cannot verify':A.unit==='m²'?f1(A.value)+' m²':A.value+' '+nounOf(A.P,A.value);
@@ -1457,9 +1459,9 @@ async function probeModel(ep){ep=String(ep||'').replace(/\/$/,'');if(!ep)return 
   try{const r=await fetch(ep+'/api/scene?id=probe'),j=await r.json().catch(()=>null);if(r.status===404&&j&&/plan not found/i.test(j.error||''))return'scene';}catch(e){}
   return null;}
 function renderStatus(){const fs=Object.values(FL).filter(f=>!f.deleted),rd=fs.filter(isRead).length,ing=fs.filter(f=>f.status==='reading').length,wait=fs.filter(f=>f.status==='queued').length;
-  $('#stat').textContent=fs.length?`${rd}/${fs.length} floors read${ing||wait?` · reading ${ing}${wait?`, ${wait} waiting`:''}, up to ${poolSize()} at a time`:''} · reader: ${readerLabel()}`:`Reader: ${readerLabel()}`;
+  $('#stat').textContent=[fs.length?`${rd}/${fs.length} floors read${ing||wait?`, ${ing+wait} reading`:''}`:'',CFG.proto||CFG.probing?'':`Model not connected (${hostOf(CFG.endpoint)})`].filter(Boolean).join(' · ');
   const tl=$('#trLive');if(tl)tl.hidden=!(ing||wait);}
-function renderHint(){$('#hint').textContent=!curB().floors.length?'Add floor plans to start, or try the sample building.':ST.view==='3d'?'Click a floor to pick it, click it again to open its plan':'Scroll to zoom · drag to pan · click a room · ↑ ↓ change floor · drag cards to reorder';}
+function renderHint(){$('#hint').textContent='';}
 function exportCSV(){const rows=[['building','floor','name','file','status','rooms','doors','windows','toilets','saunas','area_m2']];
   PROJ.buildings.forEach(b=>b.floors.forEach((id,i)=>{const f=FL[id],sc=f.schema,c=k=>sc?sc.items.filter(x=>x.kind===k).length:'';rows.push([b.name,i+1,fname(f),f.file,f.status,sc?sc.rooms.length:'',c('door'),c('window'),c('toilet'),sc?sc.rooms.filter(r=>r.type==='Sauna').length:'',sc?sc.rooms.reduce((a,r)=>a+(roomArea(sc,r)||0),0).toFixed(2):'']);}));
   download(`blueline-quantities-${new Date().toISOString().slice(0,10)}.csv`,rows.map(r=>r.map(c=>/[",\n]/.test(String(c))?`"${String(c).replace(/"/g,'""')}"`:c).join(',')).join('\n'),'text/csv');}
@@ -1555,10 +1557,10 @@ new ResizeObserver(()=>{if(ST.view==='plan'){applyVB();drawEvidence();}else size
    13. Boot
    ===================================================================== */
 $('#vPlan').innerHTML=I.plan+'<span>Plan</span>';$('#v3d').innerHTML=I.cube+'<span>3D</span>';
-$('#helpBtn').innerHTML=I.help;$('#setBtn').innerHTML=I.gear;$('#upIc').innerHTML=I.upl;$('#send').innerHTML=I.send;
+$('#helpBtn').innerHTML=I.help;$('#setBtn').innerHTML='<span style="font-size:16px;line-height:1" aria-hidden="true">⚙️</span>';$('#upIc').innerHTML=I.upl;$('#send').innerHTML=I.send;
 $('#fadd').innerHTML=I.plus+'<span>Add floor plans</span>';
 $('#trIc').innerHTML=I.trace;$('#trclose').innerHTML=I.x;
-ST.trOpen=store.get('bl_tr',true);{const th=store.get('bl_trh',0);if(th)$('#trace').style.setProperty('--trh',th+'px');}
+ST.trOpen=store.get('bl_tr2',false);{const th=store.get('bl_trh',0);if(th)$('#trace').style.setProperty('--trh',th+'px');}
 renderEmpty();renderVnav();renderCtl3();renderAll();setTrace(null);
 setInterval(()=>{if(ST.trOpen&&ST.trTab==='reading'&&anyReading())renderTrace();},500);
 /* served by the team's model server itself? then it can read the floors with no setup */

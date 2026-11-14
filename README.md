@@ -4,59 +4,92 @@ Ask a whole construction project a question and see exactly where every answer c
 
 Junction 2026, Stoa challenge "Make Blueprints Talk". Single self-contained file: open `index.html` in a browser.
 
-Version: **V5, 14 Nov 2026**
+Version: **V6, 14 Nov 2026**
 
-## How it works
+## What the interface does
 
-1. **Add floor plans.** One image per floor (PNG, JPG, SVG), or a PDF with a page per floor. Each floor becomes a card in the left panel, ordered by the number in the file name (`krs1`, `floor-2`...).
-2. **Put them in order.** Drag cards up or down; the top card is the top floor and floor numbers update. Drop a card on a building tab to move it to that building. Double-click a name to rename it. Delete has undo. Keyboard: Alt + arrows moves a floor.
-3. **Reading.** Each floor is read once into `schema.json` (rooms, doors, windows, fixtures, scale). For the trial this is Claude: inside claude.ai it runs on the viewer's own Claude account; in a downloaded copy it uses an Anthropic API key kept in the browser. The trace appears live while Claude reads.
-4. **Plan and 3D.** Plan shows one floor with what was read in blue. 3D stacks the whole building: plates show each drawing, walls rise as each floor is read. Click a floor to pick it, double-click to open its plan. Spread pulls floors apart; "Only this floor" isolates one.
-5. **Ask.** About this floor, the building, or all buildings, in English or Finnish. Answers are computed in code from the schemas, so extra questions cost nothing. Every counted item is numbered on its floor, per-floor bars jump to that floor, and in 3D each counted item gets a pin. Questions the drawings cannot support get "can't verify".
+The interface does not read drawings itself. A reader turns each floor plan into a **schema** (rooms, doors, windows, fixtures, scale). Everything after that is the interface: plan overlay, 3D, answers with proof, and the trace.
 
-Sample building: one click loads a generated 5-floor building to try everything without uploads.
+1. **Add floor plans.** One image per floor, or a PDF with a page per floor. Each floor becomes a card, ordered by the number in the file name (`krs1`, `floor-2`...). Drag to reorder, drop on a building tab to move, double-click to rename, delete has undo.
+2. **Reading, in parallel.** Floors are read at the same time: 3 with our model server, 2 on a claude.ai account, 4 with an API key. A rate limit drops it to one at a time; there is no retry loop.
+3. **Plan and 3D.** Plan shows one floor with what was read in blue. 3D stacks the building and is built from the schema alone (see below).
+4. **Ask.** About a floor, the building, or all buildings. Answers are plain code over the schemas, so asking makes no model calls. Every counted item is numbered on its floor.
+5. **Trace (T).** A panel under the viewer shows every step, live:
+   - **Reading:** a timeline of floors being read in parallel, then for each floor: the file, image preparation, the reader's call with live output and tokens, parsing, outline snapping, scale detection, linking items to rooms, and the 3D build.
+   - **Answer:** how the question was read (which rule, which words matched, which language), which floors were used and why, each tool call with the items behind it, the sum, the check (printed vs traced areas), and the cost.
 
-## Swapping in the real model
+## Readers (Settings)
 
-The reader is the only part that changes. Click **Reader** in the header and choose **Blueline API**.
+| Reader | Use | Claude needed |
+|---|---|---|
+| **Our model** | The team's model server. `POST /api/plan` (raw image, `X-Filename`), then `GET /api/scene?id=` | No |
+| **Schema files** | Drop each plan image with its schema JSON of the same name (`plan_krs1.png` + `plan_krs1.json`), or the JSON alone | No |
+| **Claude** | Stand-in until our model is ready | Yes |
 
+Schema files can be in either format:
+- the team's schematic format (`schema.md` in reinforcement-testing): `rooms[].polygon`, `number`, `label`, `printed_area_m2`, `apartment`, `items[].type` with a `point`, `scale.px_per_m`, `apartments[]`
+- the Blueline contract below
+
+A server with `POST /analyze` that returns the Blueline contract also works; the reader falls back to it when `/api/plan` is missing.
+
+### Connecting the model server
+
+Inside claude.ai the page cannot call other servers. Two options:
+
+1. **Serve this page from the model server** (simplest). Copy `index.html` into the server's `web/` folder. The page detects the server on its own origin and uses it.
+2. **Allow CORS** in `app.py` and open the page locally:
+
+```python
+def _cors(self):
+    self.send_header("Access-Control-Allow-Origin", "*")
+    self.send_header("Access-Control-Allow-Headers", "Content-Type, X-Filename")
+    self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+
+def do_OPTIONS(self):
+    self.send_response(204); self._cors(); self.end_headers()
+
+# and call self._cors() in _json() just before self.end_headers()
 ```
-POST {endpoint}/analyze      multipart: file (PNG/JPG), sheet (JSON: id, building, level)
-→ BluelineSchema (JSON)
 
-GET  {endpoint}/health       → 200
-```
+When the server returns a 3D scene (`elements` with `box {c, s, yaw}`), the 3D view draws that scene as delivered.
+
+## 3D from the schema
+
+No image processing. Rooms are filled on a 4 cm grid, touching rooms get a wall between them, and the band around the rooms becomes wall. Balconies get a railing. Each door or window cuts an opening: boxes use the side that sits on a wall (checked against the door's two rooms), points open a standard width (0.9 m door, 1.2 m window) in the nearest wall. Windows get a sill, a head and glass; fixtures are sized by kind. The trace lists how many openings were placed and which items were not on a wall.
+
+## Answers
+
+The question rules follow the team's `answer.py`, so the interface answers the way the team scores:
+- combined items: sinks and washbasins, showers and bathtubs, toilet bowls
+- room types from the printed label first (`KH/WC` is a bathroom, not a WC room), the reader's type as fallback
+- rooms labelled "X", area of room 3.09, area of apartment B or all numbered indoor rooms without outdoor spaces, storeys on the sheet
+- English, Finnish, German, French and Italian templates
+
+"This floor plan" means the floor you are looking at; "in total" no longer jumps to the whole building.
+
+## Blueline contract
 
 ```ts
 type Pt = [number, number];                  // page-image pixels
 type Box = [number, number, number, number]; // x0, y0, x1, y1
 
 interface BluelineSchema {
-  drawing: { id: string; file: string; width: number; height: number;
-             metersPerPixel: number | null;  // null = no scale, areas disabled
-             scale?: { method: string; text?: string } };
-  rooms: { id: string; type: string; label?: string; unit?: string;   // unit = apartment id
-           polygon: Pt[]; printedAreaM2?: number; conf: number }[];
-  items: { id: string; kind: "door" | "window" | "toilet" | "sink" | "kitchen_sink"
-                           | "shower" | "sauna_stove" | string;
-           box: Box; roomIds: string[]; conf: number }[];
-  walls: { id: string; points: Pt[] }[];
-  meta:  { source: string; version?: string; msRead?: number; costEUR?: number };
+  drawing: { width: number; height: number;
+             metersPerPixel: number | null;  // null = no scale, areas only where printed
+             scale?: { method: string; text?: string; estimated?: boolean }; storeys?: number };
+  rooms: { id: string; type: string; label?: string; number?: string; unit?: string;  // unit = apartment
+           polygon: Pt[]; printedAreaM2?: number | null }[];
+  items: { id: string; kind: "door" | "window" | "toilet" | "sink" | "kitchen_sink" | "shower" | "bathtub" | "sauna_stove" | string;
+           box: Box; pt?: Pt; roomIds: string[] }[];
+  meta:  { source: string };
 }
 ```
 
-Room `type` values the answer engine knows: Living, Bedroom, Kitchen, Bathroom, Sauna, Hall, Corridor, Stair, Lift, Storage, Technical, Utility, Lobby, WC, Office, Meeting, OpenOffice, Bike, Wash. Anything else becomes Room.
-
-Notes:
-- The API must allow CORS from wherever the page is opened.
-- "Also send the sample sheets" renders each sample sheet to PNG and sends it, so the whole sample project can be re-read by the real model in one click.
-- Offline testing without the API: upload an image together with a `schema.json` of the same name (for example `A_krs3.png` + `A_krs3.json`). The demo reader uses that JSON as its output.
-- Floors and buildings are guessed from file names (`A_krs3`, `floor_2`, `B-level1`) and can be corrected before reading.
-
 ## Honesty notes
 
-- The sample sheets are generated, so the demo reader is exact by construction. Real accuracy comes from the model behind the API.
-- Read costs on the demo reader are labelled as estimates. Answer cost is zero because answers are computed in code.
+- The sample building is generated, so its "reading" is exact by construction and makes no model call. The trace says so.
+- Claude token counts are measured with an API key and estimated on a claude.ai account; the trace labels which.
+- Areas are given only where they are printed or the drawing has a scale; otherwise the answer says it cannot verify.
 
 ## Licence
 

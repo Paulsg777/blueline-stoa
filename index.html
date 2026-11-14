@@ -48,6 +48,54 @@ body.dragui,body.dragui *{cursor:grabbing!important;user-select:none!important}
 
 /* body grid */
 .body{display:grid;grid-template-columns:272px minmax(0,1fr) 352px;gap:1px;background:var(--bd);min-height:0}
+.mid{display:flex;flex-direction:column;gap:1px;min-height:0;min-width:0;background:var(--bd)}
+.mid>.vw{flex:1}
+/* trace panel: how an answer or a reading was worked out, step by step */
+.trace{position:relative;height:var(--trh,270px);min-height:110px;background:var(--pan);display:flex;flex-direction:column}
+.tgrip{position:absolute;left:0;right:0;top:-5px;height:10px;cursor:ns-resize;z-index:5}
+.trh{display:flex;align-items:center;gap:10px;padding:7px 10px 7px 14px;border-bottom:1px solid var(--bd)}
+.trh b{font-size:12.5px;white-space:nowrap}
+.ttabs{display:flex;gap:2px;background:#1B1B1B;border:1px solid var(--bd2);border-radius:8px;padding:2px}
+.ttabs button{border:0;background:none;border-radius:6px;padding:3px 11px;font-size:12px;color:var(--mut);white-space:nowrap}
+.ttabs button.on{background:#3A3A3A;color:#fff}
+.trb{flex:1;overflow:auto;padding:6px 14px 14px;font-size:12.5px}
+.tq{color:#E0E0E0;margin:6px 0 6px;font-weight:500}
+.tgh{display:flex;align-items:center;gap:8px;color:#E0E0E0;font-weight:600;margin:12px 0 2px}
+.tgh:first-child{margin-top:6px}
+.tgh .asc{font-weight:400}
+.ts{display:grid;grid-template-columns:12px 168px minmax(0,1fr) 62px;gap:10px;align-items:start;padding:5px 0;border-bottom:1px solid #2B2B2B}
+.ts code{font:500 11.5px/1.5 'JetBrains Mono',monospace;color:var(--blue2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts .td{color:#C9C9C9;line-height:1.5;word-break:break-word}
+.ts .tm{font:11px/1.6 'JetBrains Mono',monospace;color:var(--fnt);text-align:right;white-space:nowrap}
+.tdot{width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--ok)}
+.ts.run .tdot{background:var(--blue);animation:pulse 1s infinite}
+.ts.err .tdot{background:var(--red)}.ts.warn .tdot{background:var(--org)}
+.raw{margin:5px 0 0;font:11px/1.45 'JetBrains Mono',monospace;color:#8FA3C4;background:#1D1D1D;border-radius:6px;padding:5px 8px;white-space:pre-wrap;word-break:break-all}
+.tempty{color:var(--mut);padding:10px 0;max-width:640px;line-height:1.55}
+.hb .live{width:7px;height:7px;border-radius:50%;background:var(--blue2);animation:pulse 1s infinite}
+.hb.on{background:var(--bsel);color:#fff}
+table.kt{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+.kt th,.kt td{text-align:left;padding:5px 8px;border-bottom:1px solid #2B2B2B;vertical-align:top}
+.kt th{color:var(--mut);font-weight:500}
+.kt td.n{font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.kt tr.rw{cursor:pointer}.kt tr.rw:hover td{background:#2A2A2A}
+.kt .ok{color:var(--ok)}.kt .no{color:var(--red)}.kt .ab{color:var(--org)}
+.kscore{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px;color:#CFCFCF}
+.kscore b{font:500 18px 'JetBrains Mono',monospace;color:var(--blue2)}
+.rl{position:absolute;left:0;top:0;transform:translate(-50%,-50%);font-size:11px;color:#EDEDED;background:rgba(18,18,18,.6);padding:1px 6px;border-radius:5px;white-space:nowrap;pointer-events:none}
+.rl i{font-style:normal;color:#AFC6EE;font-family:'JetBrains Mono',monospace}
+.gantt{display:flex;flex-direction:column;gap:2px;margin:4px 0 8px}
+.grow{display:grid;grid-template-columns:150px minmax(0,1fr) 62px;gap:10px;align-items:center;border:0;background:none;padding:3px 4px;border-radius:6px;color:#CFCFCF;text-align:left;font-size:12px}
+.grow:hover{background:#2A2A2A}.grow.on{background:#26324A}
+.gn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gt{position:relative;height:10px;background:#1C1C1C;border-radius:5px;overflow:hidden}
+.gt i{position:absolute;top:0;bottom:0;border-radius:5px;background:var(--ok);min-width:3px}
+.gt i.reading{background:var(--blue);animation:pulse 1s infinite}.gt i.error,.gt i.nokey{background:var(--red)}.gt i.queued,.gt i.idle{background:#555}
+.gv{font:11px 'JetBrains Mono',monospace;color:var(--fnt);text-align:right}
+.tsum{color:var(--mut);margin:6px 0 4px;line-height:1.5}
+.tsum b{color:#E6E6E6;font-weight:600}
+.ttabs .tl{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue2);margin-left:6px;vertical-align:middle;animation:pulse 1s infinite}
+.mbox code{font:11.5px 'JetBrains Mono',monospace;background:#1E1E1E;border-radius:4px;padding:0 4px;color:#CFE0FF}
 
 /* left: buildings + floors */
 .left{background:var(--pan);display:flex;flex-direction:column;min-height:0}
@@ -266,7 +314,9 @@ details.how summary:hover{color:var(--ink)}
   body{overflow:auto}
   .app{height:auto;min-height:100%}
   .body{grid-template-columns:1fr}
-  .vw{height:60vh;order:-1}
+  .mid{order:-1}
+  .vw{height:60vh;flex:none}
+  .trace{height:300px}
   .right{height:70vh}
   .pname{display:none}
   .legend{max-width:calc(100% - 24px);bottom:auto;top:62px}
@@ -288,6 +338,7 @@ details.how summary:hover{color:var(--ink)}
       <button id="v3d" role="tab" aria-selected="false" title="3D view (3)"></button>
     </div>
     <span class="sp"></span>
+    <button class="hb" id="trBtn" title="Show every step behind each reading and answer (T)" aria-pressed="false"><span id="trIc"></span><span class="lbl">Trace</span><span class="live" id="trLive" hidden></span></button>
     <button class="hb icon" id="helpBtn" aria-label="How it works" title="How it works"></button>
     <button class="hb icon" id="setBtn" aria-label="Settings" title="Settings"></button>
     <button class="hb pri" id="upBtn"><span id="upIc"></span><span class="lbl">Add floor plans</span></button>
@@ -300,12 +351,14 @@ details.how summary:hover{color:var(--ink)}
       <div class="flist" id="flist" role="listbox" aria-label="Floors"></div>
       <button class="fadd" id="fadd"></button>
     </aside>
+    <div class="mid" id="mid">
     <main class="vw isempty" id="vw">
       <svg id="psvg" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Floor plan">
         <g id="pbase"></g><g id="ptrace"></g><g id="plive"></g><g id="phit"></g><g id="pev"></g>
         <line id="scan" x1="0" x2="0" y1="-10" y2="-10" style="display:none"/>
       </svg>
       <canvas id="c3" aria-label="3D view of the building"></canvas>
+      <div class="lbl3 d-only" id="rlbl3"></div>
       <div class="lbl3 d-only" id="lbl3"></div>
       <div class="ovl flab p-only" id="flab"></div>
       <div class="ovl vnav p-only" id="vnav"></div>
@@ -316,6 +369,12 @@ details.how summary:hover{color:var(--ink)}
       <div class="ovl hint3 d-only" id="hint3"></div>
       <div class="ovl empty" id="empty"></div>
     </main>
+    <section class="trace" id="trace" hidden aria-label="How it was worked out">
+      <div class="tgrip" id="tgrip" title="Drag to resize"></div>
+      <div class="trh"><b>How it was worked out</b><div class="ttabs" id="ttabs"></div><span class="sp"></span><button class="ib" id="trclose" data-act="trclose" aria-label="Close the trace" title="Close (T)"></button></div>
+      <div class="trb" id="trb"></div>
+    </section>
+    </div>
     <aside class="right" aria-label="Ask">
       <div class="ahd"><h3>Ask about</h3><div class="seg" id="seg"></div></div>
       <div class="msgs" id="msgs"></div>
@@ -365,6 +424,7 @@ const I={
   plan:svgI('<path d="M2.5 2.5h11v11h-11zM2.5 8h5.5v5.5M8 2.5V6M11 8h2.5"/>',' stroke-width="1.3"'),
   help:svgI('<circle cx="8" cy="8" r="6"/><path d="M6.3 6.2a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4"/><path d="M8 11.4h.01" stroke-width="2"/>',' stroke-width="1.3"'),
   x:svgI('<path d="M4 4l8 8M12 4l-8 8"/>',' stroke-width="1.5"'),
+  trace:svgI('<path d="M2.5 4h6M2.5 8h11M2.5 12h4.5"/><circle cx="11.5" cy="4" r="1.4"/><circle cx="9.8" cy="12" r="1.4"/>',' stroke-width="1.4"'),
   send:svgI('<path d="M8 13V3.5M4 7.5l4-4 4 4"/>',' stroke-width="1.8"'),
 };
 function toast(t,o={}){const el=$('#toast');el.innerHTML=`<span>${esc(t)}</span>${o.undo?'<button id="tundo">Undo</button>':''}`;el.hidden=false;clearTimeout(toast.t);
@@ -383,12 +443,38 @@ const RT={
   Closet:{fi:'VH',en:'Closet',pl:'closets'},Storage:{fi:'VAR',en:'Storage',pl:'storage rooms'},Utility:{fi:'KHH',en:'Utility room',pl:'utility rooms'},
   Balcony:{fi:'PARV',en:'Balcony',pl:'balconies'},Office:{fi:'TSTO',en:'Office',pl:'offices'},Meeting:{fi:'NEUV',en:'Meeting room',pl:'meeting rooms'},
   OpenOffice:{fi:'AVOTSTO',en:'Open office',pl:'open offices'},Stair:{fi:'PORRAS',en:'Stair',pl:'stairs'},Lift:{fi:'HISSI',en:'Lift',pl:'lifts'},
-  Technical:{fi:'TEKN',en:'Technical room',pl:'technical rooms'},Lobby:{fi:'TK',en:'Lobby',pl:'lobbies'},Bike:{fi:'PVH',en:'Bike storage',pl:'bike storages'},
+  Technical:{fi:'TEKN',en:'Technical room',pl:'technical rooms'},Lobby:{fi:'AULA',en:'Lobby',pl:'lobbies'},Bike:{fi:'PVH',en:'Bike storage',pl:'bike storages'},
   Wash:{fi:'PH',en:'Wash room',pl:'wash rooms'},Room:{fi:'H',en:'Room',pl:'rooms'}
 };
 const KIND={door:['door','doors'],window:['window','windows'],toilet:['toilet','toilets'],sink:['sink','sinks'],kitchen_sink:['kitchen sink','kitchen sinks'],shower:['shower','showers'],bathtub:['bathtub','bathtubs'],sauna_stove:['sauna stove','sauna stoves'],other:['fixture','fixtures']};
 const TYPEMAP={bedroom:'Bedroom',living:'Living',kitchen:'Kitchen',dining:'Dining',bathroom:'Bathroom',wc:'WC',sauna:'Sauna',hall:'Hall',corridor:'Corridor',closet:'Closet',storage:'Storage',utility:'Utility',balcony:'Balcony',office:'Office',meeting:'Meeting',stair:'Stair',technical:'Technical',other:'Room'};
-const FIXK={toilet:'toilet',wc:'toilet',sink:'sink',basin:'sink',shower:'shower',bathtub:'bathtub',bath:'bathtub',sauna_stove:'sauna_stove',stove:'sauna_stove'};
+const FIXK={toilet:'toilet',wc:'toilet',sink:'sink',basin:'sink',washbasin:'sink',wash_basin:'sink',kitchen_sink:'kitchen_sink',shower:'shower',bathtub:'bathtub',bath:'bathtub',sauna_stove:'sauna_stove',stove:'sauna_stove'};
+/* printed labels -> room types (Finnish plan codes first, then common words in the Stoa languages) */
+const LABEL_TYPES=[
+  ['Bathroom',/^(kh|kph|ph|pesuh|pesuhuone|kylpyhuone|sh|suihku|bad|bain|bagno|dusche|douche|bathroom|bath)$/],
+  ['WC',/^(wc|toilette|toilet)$/],
+  ['Sauna',/^(s|su|sauna|löylyhuone)$/],
+  ['Bedroom',/^(mh|makuuhuone|makuuh|bedroom|schlafzimmer|chambre|camera)$/],
+  ['Kitchen',/^(k|kt|kk|tk|ak|keittiö|keittokomero|tupakeittiö|avokeittiö|apukeittiö|keittiötila|küche|kuche|cuisine|cucina|kochen|kitchen|kitchenette)$/],
+  ['Balcony',/^(parv|parveke|lasitettu|lasit|balkon|balcon|balcone|loggia|terrasse|terrace|balcony)$/],
+  ['Living',/^(oh|olohuone|tupa|wohnen|wohnzimmer|living|séjour|sejour|soggiorno)$/],
+  ['Hall',/^(et|eteinen|hall|entrée|entree|eingang|ingresso)$/],
+  ['Closet',/^(vh|vaatehuone|wardrobe|closet)$/],
+  ['Storage',/^(var|varasto|reduit|réduit|abstellraum|storage|ripostiglio|cellier)$/],
+  ['Utility',/^(khh|kodinhoitohuone|utility|laundry|buanderie)$/],
+  ['Corridor',/^(käytävä|corridor|korridor|flur|dégagement|degagement|disimpegno)$/],
+  ['Stair',/^(porras|porrashuone|treppenhaus|treppe|escalier|stair|stairs|scala)$/],
+];
+function labelTypes(label){const out=new Set();String(label||'').toLowerCase().split(/[\s\/+,.&()\-]+/).filter(t=>t&&!/^[\d.,m²]+$/.test(t)).forEach(t=>{for(const[ty,re]of LABEL_TYPES)if(re.test(t)){out.add(ty);break;}});
+  if(out.has('Bathroom'))out.delete('WC');return out;} // a WC inside a bathroom is not a separate WC room
+const typeFromLabel=l=>{const s=labelTypes(l);return s.size?[...s][0]:null;};
+const roomIs=(r,types)=>{const lt=labelTypes(r.label);return lt.size?types.some(t=>lt.has(t)):types.includes(r.type);}; // the printed label wins; the reader's type is the fallback
+const OUTDOOR=/balkon|balcon|balcone|loggia|terrass|terrazz|veranda|sitzplatz|parvek|terassi|lasitet|balcony/i;
+const isOutdoor=r=>r.type==='Balcony'||OUTDOOR.test(r.label||'');
+const isVoid=r=>/schacht|shaft|gaine|void|vide|luftraum|leerraum|cavedi|vuoto|hormi|kuilu/i.test(r.label||'');
+const normL=s=>String(s||'').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu,'');
+const normNo=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,'').replace(',','.');
+const aptKey=s=>{const t=String(s||'').replace(/\b(app|apt|whg|wohnung|apartment|appartement|appartamento|asunto|unit|ap)\b\.?/gi,' ').trim().split(/\s+/);return(t[t.length-1]||'').toUpperCase();};
 
 /* =====================================================================
    2. Sample building generator (a stand-in for real sheets). Builds each
@@ -501,14 +587,14 @@ function drawGeneric(sc){const d=sc.drawing;let s=`<rect class="pg" width="${d.w
    ===================================================================== */
 const PROJ={name:'My project',buildings:[{id:'A',name:'Building A',floors:[]}]};
 const FL={};let FN=0;
-const ST={view:'plan',bId:'A',fid:null,scopeMode:'auto',scope:{type:'building',id:'A'},active:null,sel:null,trace:true};
+const ST={view:'plan',bId:'A',fid:null,scopeMode:'auto',scope:{type:'building',id:'A'},active:null,sel:null,trace:true,trOpen:true,trTab:'reading',trN:0,trRaw:false};
 const CFG={reader:store.get('bl_reader','claude'),endpoint:store.get('bl_endpoint','http://localhost:8000')};
 const bld=id=>PROJ.buildings.find(b=>b.id===id);
 const curB=()=>bld(ST.bId);
 const levelOf=f=>bld(f.bId).floors.indexOf(f.id)+1;
 const fname=f=>f.name||`Floor ${levelOf(f)}`;
 const isRead=f=>f.status==='read'&&!!f.schema;
-function makeFloor(bId,o){const f={id:'f'+(++FN),bId,name:null,file:o.file||'',src:o.src,status:'idle',err:null,errShort:'',schema:null,img:o.img||null,sample:o.sample||null,schemaJson:o.schemaJson||null,readBy:null,v:0,live:null,trace:[],t0:0};FL[f.id]=f;return f;}
+function makeFloor(bId,o){const f={id:'f'+(++FN),bId,name:null,file:o.file||'',src:o.src,status:'idle',err:null,errShort:'',schema:null,img:o.img||null,sample:o.sample||null,schemaJson:o.schemaJson||null,readBy:null,v:0,live:null,steps:[],rawTail:[],rt:null,usage:null,meta:o.meta||null,t0:0};FL[f.id]=f;return f;}
 function newBuilding(name){const used=new Set(PROJ.buildings.map(b=>b.id));let c='A';while(used.has(c))c=String.fromCharCode(c.charCodeAt(0)+1);const b={id:c,name:name||`Building ${c}`,floors:[]};PROJ.buildings.push(b);return b;}
 const dims=f=>f.schema?[f.schema.drawing.width,f.schema.drawing.height]:f.img?[f.img.W,f.img.H]:[PW,PH];
 function cropOf(f){
@@ -534,13 +620,13 @@ function morph(src,W,H,k,er){const r=k>>1,tmp=new Uint8Array(W*H),out=new Uint8A
   for(let x=0;x<W;x++){for(let y=0;y<H;y++)ps[y+1]=ps[y]+tmp[y*W+x];for(let y=0;y<H;y++){const a=Math.max(0,y-r),b=Math.min(H,y+r+1),s=ps[b]-ps[a];out[y*W+x]=er?(s===b-a?1:0):(s>0?1:0);}}
   return out;}
 async function prepDrawable(src,nw,nh,name){
-  const k=Math.min(1,Math.sqrt(1.1e6/(nw*nh)),1568/Math.max(nw,nh)),W=Math.max(1,Math.round(nw*k)),H=Math.max(1,Math.round(nh*k));
+  const tp0=performance.now(),k=Math.min(1,Math.sqrt(1.1e6/(nw*nh)),1568/Math.max(nw,nh)),W=Math.max(1,Math.round(nw*k)),H=Math.max(1,Math.round(nh*k));
   const c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d',{willReadFrequently:true});g.fillStyle='#fff';g.fillRect(0,0,W,H);g.imageSmoothingQuality='high';g.drawImage(src,0,0,W,H);
   const px=g.getImageData(0,0,W,H).data,lum=new Uint8Array(W*H);for(let i=0;i<W*H;i++)lum[i]=(px[i*4]*299+px[i*4+1]*587+px[i*4+2]*114)/1000;
   const t=Math.min(otsu(lum),200),dark=new Uint8Array(W*H);for(let i=0;i<W*H;i++)dark[i]=lum[i]<t?1:0;
   const kk=Math.max(3,Math.round(Math.max(W,H)*.0028))|1,thick=morph(morph(dark,W,H,kk,1),W,H,kk,0);
   const blob=await new Promise(r=>c.toBlob(r,'image/png'));
-  return{name,W,H,blob,thick,canvas:c,url:URL.createObjectURL(blob)};
+  return{name,W,H,blob,thick,canvas:c,url:URL.createObjectURL(blob),stats:{nw:Math.round(nw),nh:Math.round(nh),thr:t,k:kk,ms:Math.round(performance.now()-tp0)}};
 }
 async function prepFile(file){const url=URL.createObjectURL(file);
   try{const img=new Image();img.src=url;await img.decode();let nw=img.naturalWidth,nh=img.naturalHeight;if(nw<16||nh<16){nw=1600;nh=1200;}return await prepDrawable(img,nw,nh,file.name);}
@@ -551,7 +637,7 @@ async function pdfPages(file){ // every page of a PDF becomes one floor
   const doc=await lib.getDocument({data:new Uint8Array(await file.arrayBuffer()),isEvalSupported:false}).promise,out=[];
   for(let p=1;p<=Math.min(doc.numPages,12);p++){const pg=await doc.getPage(p),v0=pg.getViewport({scale:1}),s=Math.min(3,2000/Math.max(v0.width,v0.height)),vp=pg.getViewport({scale:s});
     const c=document.createElement('canvas');c.width=Math.round(vp.width);c.height=Math.round(vp.height);const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);
-    await pg.render({canvasContext:g,viewport:vp}).promise;out.push({name:`${file.name.replace(/\.pdf$/i,'')} p${p}`,canvas:c});}
+    await pg.render({canvasContext:g,viewport:vp}).promise;out.push({name:`${file.name.replace(/\.pdf$/i,'')} p${p}`,canvas:c,page:p,pages:doc.numPages});}
   return out;
 }
 
@@ -570,27 +656,27 @@ The image is ${W} x ${H} pixels. Give coordinates as integer pixels of THIS imag
 
 Reply with JSON Lines only: one JSON object per line, no other text and no code fences, in this order.
 First line:
-{"t":"meta","title":"short title of the drawing","kind":"floor plan" or "other","scale":"printed scale such as 1:100, or null","bar":{"p":[x1,y1,x2,y2],"m":metres} or null,"dim":{"p":[x1,y1,x2,y2],"m":metres} or null}
+{"t":"meta","title":"short title of the drawing","kind":"floor plan" or "other","storeys":how many separate storey plans are drawn on this sheet (usually 1),"scale":"printed scale such as 1:100, or null","bar":{"p":[x1,y1,x2,y2],"m":metres} or null,"dim":{"p":[x1,y1,x2,y2],"m":metres} or null}
   bar = the two ends of a graphic scale bar and the length in metres it shows. dim = the two ends of one clearly printed dimension and its length in metres.
 Then one line per room or space:
-{"t":"room","id":"R1","name":"room label as printed","type":"bedroom|living|kitchen|dining|bathroom|wc|sauna|hall|corridor|closet|storage|utility|balcony|office|meeting|stair|technical|other","area":printed area in m2 as a number or null,"poly":[[x,y],...]}
+{"t":"room","id":"R1","number":"room number as printed, or null","name":"room label as printed","type":"bedroom|living|kitchen|dining|bathroom|wc|sauna|hall|corridor|closet|storage|utility|balcony|office|meeting|stair|technical|other","area":printed area in m2 as a number or null,"apartment":"label of the apartment or unit it belongs to, or null","poly":[[x,y],...]}
   poly = the floor outline along the inside faces of the walls, clockwise, 4 to 12 corners, straight edges that follow the walls.
 Then one line per door: {"t":"door","id":"D1","b":[x0,y0,x1,y1],"rooms":["R1","R2"]}
   b = box around the door leaf and its swing. rooms = the rooms it joins, one id for a door to the outside.
 Then one line per window: {"t":"window","id":"W1","b":[x0,y0,x1,y1],"room":"R1"}
-Then one line per toilet, sink, shower, bathtub or sauna stove: {"t":"fix","id":"F1","kind":"toilet|sink|shower|bathtub|sauna_stove","b":[x0,y0,x1,y1],"room":"R1"}
+Then one line per toilet, washbasin, kitchen sink, shower, bathtub or sauna stove: {"t":"fix","id":"F1","kind":"toilet|washbasin|kitchen_sink|shower|bathtub|sauna_stove","b":[x0,y0,x1,y1],"room":"R1"}
 Last line: {"t":"end"}
 
-Rules: report only what is drawn and never guess. Keep boxes tight. Count every door and window. If the image is not a floor plan, reply with the meta line using "kind":"other" and then {"t":"end"} only.`;
+Rules: report only what is drawn and never guess. Keep boxes tight. Count every door leaf and every window; an open doorway without a door leaf is not a door. A double-bowl sink is one sink. Copy room names and numbers exactly as printed. If the image is not a floor plan, reply with the meta line using "kind":"other" and then {"t":"end"} only.`;
 function makeParser(raw,onItem){let done=0;
-  const take=line=>{line=line.trim();if(!line.startsWith('{'))return;let o;try{o=JSON.parse(line);}catch(e){return;}
-    if(o.t==='meta')raw.meta=o;else if(o.t==='room')raw.rooms.push(o);else if(o.t==='door')raw.doors.push(o);else if(o.t==='window')raw.wins.push(o);else if(o.t==='fix')raw.fix.push(o);else return;onItem(o);};
+  const take=line=>{line=line.trim();if(!line.startsWith('{'))return;let o;try{o=JSON.parse(line);}catch(e){raw.bad=(raw.bad||0)+1;return;}
+    if(o.t==='meta')raw.meta=o;else if(o.t==='room')raw.rooms.push(o);else if(o.t==='door')raw.doors.push(o);else if(o.t==='window')raw.wins.push(o);else if(o.t==='fix')raw.fix.push(o);else return;raw.ok=(raw.ok||0)+1;onItem(o);};
   const f=text=>{const lines=text.split('\n'),full=lines.length-1;for(;done<full;done++)take(lines[done]);};
   f.whole=text=>{if(raw.rooms.length)return;let v;try{v=JSON.parse(text.replace(/```[a-z]*\n?/gi,'').trim());}catch(e){return;}
     const list=Array.isArray(v)?v:v&&typeof v==='object'?[].concat(v.meta?[Object.assign({t:'meta'},v.meta)]:[],...['rooms','doors','windows','fixtures'].map((k,i)=>(v[k]||[]).map(o=>Object.assign({t:['room','door','window','fix'][i]},o)))):[];
     list.forEach(o=>{if(o&&typeof o==='object')take(JSON.stringify(o));});};
   return f;}
-const clean=s=>String(s==null?'':s).replace(/[^\p{L}\p{N} .,\-\/()²]/gu,'').trim().slice(0,24);
+const clean=s=>String(s==null?'':s).replace(/[^\p{L}\p{N} .,'’+&\-\/()²]/gu,'').trim().slice(0,40);
 const nbox=b=>Array.isArray(b)&&b.length===4&&b.every(v=>isFinite(+v))?[Math.min(+b[0],+b[2]),Math.min(+b[1],+b[3]),Math.max(+b[0],+b[2]),Math.max(+b[1],+b[3])]:null;
 const inPoly=(p,poly)=>{let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])c=!c;}return c;};
 const segD=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy||1,t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L));return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);};
@@ -609,31 +695,36 @@ function snapPoly(poly,P){const{W,H,thick}=P,R=Math.max(5,Math.round(Math.max(W,
   return pts.map((p,i)=>{let x=p[0],y=p[1];[L[(i+n-1)%n],L[i]].forEach(e=>{if(e){if(e.hz)y=e.v;else x=e.v;}});return[x,y];});}
 function toSchema(raw,P,f){ // Claude's lines -> the Blueline contract, in page-image pixels
   const W=P.W,H=P.H,cl=p=>[clamp(Math.round(+p[0]||0),0,W),clamp(Math.round(+p[1]||0),0,H)];
-  const rs=raw.rooms.filter(r=>Array.isArray(r.poly)&&r.poly.length>=3).map(r=>{const p0=r.poly.map(cl),p1=snapPoly(p0,P),a0=shoelace(p0),a1=shoelace(p1);return{r,poly:a0>0&&a1>a0*.5&&a1<a0*2?p1:p0};}).filter(x=>shoelace(x.poly)>16);
-  let mpp=null,est=false,method='none';
+  let snapped=0,shift=0;
+  const rs=raw.rooms.filter(r=>Array.isArray(r.poly)&&r.poly.length>=3).map(r=>{const p0=r.poly.map(cl),p1=snapPoly(p0,P),a0=shoelace(p0),a1=shoelace(p1),use=a0>0&&a1>a0*.5&&a1<a0*2&&p1.length===p0.length;
+    if(use){const d=p0.reduce((a,q,i)=>a+Math.hypot(q[0]-p1[i][0],q[1]-p1[i][1]),0)/p0.length;if(d>.4){snapped++;shift+=d;}}return{r,poly:use?p1:p0};}).filter(x=>shoelace(x.poly)>16);
+  let mpp=null,est=false,method='none',note='';
   const pr=rs.filter(x=>+x.r.area>0).map(x=>Math.sqrt(+x.r.area/shoelace(x.poly))).sort((a,b)=>a-b);
-  if(pr.length){mpp=pr[pr.length>>1];method='printed areas';}
+  if(pr.length){mpp=pr[pr.length>>1];method='printed areas';note=`Median of ${pr.length} printed room area${pr.length>1?'s':''} against their traced outlines${pr.length>1?` (range ${(pr[0]*100).toFixed(2)} to ${(pr[pr.length-1]*100).toFixed(2)} cm per px)`:''}`;}
   else{const m=raw.meta||{},ok=q=>q&&Array.isArray(q.p)&&q.p.length===4&&+q.m>0,seg=ok(m.bar)?m.bar:ok(m.dim)?m.dim:null;
-    if(seg){const L=Math.hypot(seg.p[2]-seg.p[0],seg.p[3]-seg.p[1]);if(L>8){mpp=+seg.m/L;method=seg===m.bar?'scale bar':'printed dimension';}}
-    if(!mpp){const ds=raw.doors.map(d=>nbox(d.b)).filter(Boolean).map(b=>Math.max(b[2]-b[0],b[3]-b[1])).filter(v=>v>3).sort((a,b)=>a-b);if(ds.length>=2){mpp=.9/ds[ds.length>>1];est=true;method='door widths';}}}
-  const idm={},rooms=rs.map((x,i)=>{const r=x.r,t=TYPEMAP[String(r.type||'').toLowerCase()]||'Room',id='R'+(i+1);if(r.id!=null)idm[r.id]=id;return{id,type:t,label:clean(r.name)||RT[t].fi,polygon:x.poly,printedAreaM2:+r.area>0?+r.area:null,conf:1};});
+    if(seg){const L=Math.hypot(seg.p[2]-seg.p[0],seg.p[3]-seg.p[1]);if(L>8){mpp=+seg.m/L;method=seg===m.bar?'scale bar':'printed dimension';note=`${seg===m.bar?'Scale bar':'Printed dimension'}: ${seg.m} m = ${Math.round(L)} px`;}}
+    if(!mpp){const ds=raw.doors.map(d=>nbox(d.b)).filter(Boolean).map(b=>Math.max(b[2]-b[0],b[3]-b[1])).filter(v=>v>3).sort((a,b)=>a-b);if(ds.length>=2){mpp=.9/ds[ds.length>>1];est=true;method='door widths';note=`Estimated from ${ds.length} doors, assuming a typical door is 0.9 m wide (rough)`;}}}
+  const idm={},rooms=rs.map((x,i)=>{const r=x.r,t=TYPEMAP[String(r.type||'').toLowerCase()]||typeFromLabel(r.name)||'Room',id='R'+(i+1);if(r.id!=null)idm[r.id]=id;return{id,type:t,label:clean(r.name)||RT[t].fi,number:clean(r.number)||null,unit:clean(r.apartment)||null,polygon:x.poly,printedAreaM2:+r.area>0?+r.area:null,conf:1};});
   const near=(b,k)=>{const c=[(b[0]+b[2])/2,(b[1]+b[3])/2],tol=Math.max(b[2]-b[0],b[3]-b[1])*.8+4;return rooms.map(r=>({id:r.id,d:inPoly(c,r.polygon)?0:edgeD(c,r.polygon)})).filter(h=>h.d<=tol).sort((a,b)=>a.d-b.d).slice(0,k).map(h=>h.id);};
-  const items=[];let nD=0,nW=0,nF=0;
-  raw.doors.forEach(d=>{const b=nbox(d.b);if(!b)return;let rids=[...new Set((Array.isArray(d.rooms)?d.rooms:[]).map(v=>idm[v]).filter(Boolean))].slice(0,2);if(!rids.length)rids=near(b,2);items.push({id:'D'+(++nD),kind:'door',box:b,roomIds:rids,conf:1});});
+  const items=[];let nD=0,nW=0,nF=0,lg=0,ln=0;
+  raw.doors.forEach(d=>{const b=nbox(d.b);if(!b)return;let rids=[...new Set((Array.isArray(d.rooms)?d.rooms:[]).map(v=>idm[v]).filter(Boolean))].slice(0,2);if(!rids.length){rids=near(b,2);ln++;}else lg++;items.push({id:'D'+(++nD),kind:'door',box:b,roomIds:rids,conf:1});});
   raw.wins.forEach(w=>{const b=nbox(w.b);if(!b)return;items.push({id:'W'+(++nW),kind:'window',box:b,roomIds:[idm[w.room]||near(b,1)[0]].filter(Boolean),conf:1});});
   raw.fix.forEach(x=>{const b=nbox(x.b);if(!b)return;items.push({id:'F'+(++nF),kind:FIXK[String(x.kind||'').toLowerCase()]||'other',box:b,roomIds:[idm[x.room]||near(b,1)[0]].filter(Boolean),conf:1});});
-  return{drawing:{id:f.id,file:P.name,width:W,height:H,metersPerPixel:mpp,scale:{method,text:raw.meta&&raw.meta.scale||null,estimated:est},title:raw.meta&&clean(raw.meta.title)||null},
-    rooms,items,walls:[],texts:[],meta:{source:'claude',version:API_MODEL}};
+  return{drawing:{id:f.id,file:P.name,width:W,height:H,metersPerPixel:mpp,scale:{method,text:raw.meta&&raw.meta.scale||null,estimated:est},title:raw.meta&&clean(raw.meta.title)||null,storeys:clamp(Math.round(+(raw.meta&&raw.meta.storeys)||1),1,6)},
+    rooms,items,walls:[],texts:[],meta:{source:'claude',version:API_MODEL},_stats:{snapped,shift:snapped?shift/snapped:0,scaleNote:note,lines:raw.ok||0,bad:raw.bad||0,lg,ln,dropped:raw.rooms.length-rooms.length}};
 }
-async function apiRead(key,blob,prompt,onT,signal){
+async function apiRead(key,blob,prompt,onT,signal,usage){usage=usage||{};
   const b64=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(String(fr.result).split(',')[1]);fr.onerror=()=>rej({code:'transform_error'});fr.readAsDataURL(blob);});
   let res;try{res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal,headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
     body:JSON.stringify({model:API_MODEL,max_tokens:8000,stream:true,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/png',data:b64}},{type:'text',text:prompt}]}]})});}
   catch(e){throw{code:e&&e.name==='AbortError'?'cancelled':'network'};}
+  if(res.status===429)throw{code:'rate_limited',retryAfter:+res.headers.get('retry-after')||0};
   if(!res.ok){let m='HTTP '+res.status;try{const j=await res.json();if(j.error&&j.error.message)m=j.error.message;}catch(e){}throw{code:'api_error',message:m};}
   const rd=res.body.getReader(),dec=new TextDecoder();let buf='',text='';
   try{for(;;){const{value,done}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});let i;
     while((i=buf.indexOf('\n\n'))>=0){const ev=buf.slice(0,i);buf=buf.slice(i+2);const dl=ev.split('\n').find(l=>l.startsWith('data:'));if(!dl)continue;let j;try{j=JSON.parse(dl.slice(5));}catch(e){continue;}
+      if(j.type==='message_start'&&j.message&&j.message.usage)usage.in=j.message.usage.input_tokens;
+      if(j.type==='message_delta'&&j.usage&&j.usage.output_tokens)usage.out=j.usage.output_tokens;
       if(j.type==='content_block_delta'&&j.delta&&j.delta.type==='text_delta'){text+=j.delta.text;onT(text);}else if(j.type==='error')throw{code:'api_error',message:j.error&&j.error.message||'API error'};}}}
   catch(e){if(e&&e.code)throw e;throw{code:e&&e.name==='AbortError'?'cancelled':'network'};}
   return text;}
@@ -647,48 +738,115 @@ function validateSchema(s){const e=[];if(!s||typeof s!=='object')return['not an 
   s.rooms.forEach((r,i)=>{if(!Array.isArray(r.polygon)||r.polygon.length<3)e.push(`rooms[${i}].polygon`);if(!RT[r.type])r.type=TYPEMAP[String(r.type||'').toLowerCase()]||'Room';r.id=r.id||'R'+(i+1);if(r.printedAreaM2===undefined)r.printedAreaM2=null;});
   s.items.forEach((it,i)=>{if(!Array.isArray(it.box)||it.box.length!==4)e.push(`items[${i}].box`);it.id=it.id||'I'+(i+1);it.roomIds=it.roomIds||[];});
   s.walls=s.walls||[];s.texts=s.texts||[];s.meta=s.meta||{};if(d.metersPerPixel===undefined)d.metersPerPixel=null;if(!d.scale)d.scale={method:d.metersPerPixel?'schema':'none'};return e;}
-const RQ=[];let RQbusy=false;
-function queueRead(f){if(!f||f.deleted)return;if(!RQ.includes(f.id))RQ.push(f.id);f.status='queued';f.err=null;patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();pump();}
-async function pump(){if(RQbusy)return;RQbusy=true;try{while(RQ.length){const f=FL[RQ.shift()];if(!f||f.deleted||f.status!=='queued')continue;await readFloor(f);}}finally{RQbusy=false;}}
-function startRead(f){f.status='reading';f.t0=performance.now();f.live={n:0,rooms:0,doors:0,wins:0,fix:0};f.trace=[];patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();}
+/* adapters: other readers' output -> the Blueline contract */
+function linkItems(rooms,items){items.forEach(it=>{if(it.roomIds&&it.roomIds.length)return;const b=it.box,c=[(b[0]+b[2])/2,(b[1]+b[3])/2],tol=Math.max(b[2]-b[0],b[3]-b[1])*.8+4;
+  it.roomIds=rooms.map(r=>({id:r.id,d:inPoly(c,r.polygon)?0:edgeD(c,r.polygon)})).filter(h=>h.d<=tol).sort((a,b)=>a.d-b.d).slice(0,it.kind==='door'?2:1).map(h=>h.id);});}
+function rescaleSchema(s,P){const d=s.drawing,kx=P.W/(d.width||P.W),ky=P.H/(d.height||P.H);if(Math.abs(kx-1)<.002&&Math.abs(ky-1)<.002){d.width=P.W;d.height=P.H;return;}
+  s.rooms.forEach(r=>{r.polygon=r.polygon.map(p=>[p[0]*kx,p[1]*ky]);if(r.labelBox)r.labelBox=[r.labelBox[0]*kx,r.labelBox[1]*ky,r.labelBox[2]*kx,r.labelBox[3]*ky];});
+  s.items.forEach(i=>{i.box=[i.box[0]*kx,i.box[1]*ky,i.box[2]*kx,i.box[3]*ky];if(i.pt)i.pt=[i.pt[0]*kx,i.pt[1]*ky];});(s.walls||[]).forEach(w=>{if(w.points)w.points=w.points.map(p=>[p[0]*kx,p[1]*ky]);});
+  if(d.metersPerPixel)d.metersPerPixel/=kx;d.width=P.W;d.height=P.H;}
+/* the team's schematic (schema.md in reinforcement-testing): rooms[].polygon, items[].point, scale.px_per_m */
+const isTeamSchematic=j=>!!j&&!j.drawing&&Array.isArray(j.rooms)&&(j.scale!==undefined||j.coord_space!==undefined||(j.items||[]).some(i=>Array.isArray(i.point))||j.rooms.some(r=>'printed_area_m2' in r||'number' in r));
+function fromTeamSchematic(j){
+  const rooms=j.rooms.filter(r=>Array.isArray(r.polygon)&&r.polygon.length>=3).map((r,i)=>{const t=typeFromLabel(r.label)||'Room';return{id:'R'+(i+1),type:t,label:clean(r.label)||'',number:r.number!=null?String(r.number):null,unit:r.apartment!=null?String(r.apartment):null,polygon:r.polygon.map(p=>[+p[0],+p[1]]),printedAreaM2:r.printed_area_m2!=null?+r.printed_area_m2:r.area_m2!=null?+r.area_m2:null,conf:1};});
+  const K={door:'door',window:'window',toilet:'toilet',washbasin:'sink',sink:'kitchen_sink',bathtub:'bathtub',shower:'shower',stove:'other'},items=[];
+  (j.items||[]).forEach(it=>{const k=K[it.type]||FIXK[it.type]||'other',p=Array.isArray(it.point)?it.point:null,b=Array.isArray(it.box)?nbox(it.box):p?[+p[0]-7,+p[1]-7,+p[0]+7,+p[1]+7]:null;if(!b)return;items.push({id:(k==='door'?'D':k==='window'?'W':'F')+(items.length+1),kind:k,box:b,pt:p&&!it.box?[+p[0],+p[1]]:undefined,roomIds:[],conf:1});});
+  linkItems(rooms,items);let mx=0,my=0;rooms.forEach(r=>r.polygon.forEach(p=>{mx=Math.max(mx,p[0]);my=Math.max(my,p[1]);}));items.forEach(i=>{mx=Math.max(mx,i.box[2]);my=Math.max(my,i.box[3]);});
+  const ppm=j.scale&&+j.scale.px_per_m>0?+j.scale.px_per_m:null;
+  return{drawing:{width:+j.width||Math.ceil(mx*1.05)||1000,height:+j.height||Math.ceil(my*1.05)||800,metersPerPixel:ppm?1/ppm:null,scale:{method:ppm?'schematic ('+(j.scale.source||'given')+')':'none',estimated:!!(j.scale&&j.scale.source==='estimated')},storeys:+j.floors>=1?+j.floors:1},
+    rooms,items,walls:[],texts:[],apartments:(j.apartments||[]).map(a=>a&&a.label!=null?String(a.label):String(a)),meta:{source:'team schematic'}};}
+/* the team's model server (HackToTheFuture app.py): scene elements in metres, boxes {c,s,yaw} */
+function fromTeamScene(scene,f){const[W,H]=f.img?[f.img.W,f.img.H]:[PW,PH],sx=W/scene.size[0],sy=H/scene.size[1],P=p=>[+p[0]*sx,+p[1]*sy];
+  const TT={kitchen:'Kitchen',bedroom:'Bedroom',bathroom:'Bathroom',wc:'WC',balcony:'Balcony',sauna:'Sauna',living_room:'Living',dining_room:'Dining',hall:'Hall',corridor:'Corridor',office:'Office',storage:'Storage',laundry:'Utility',utility:'Utility',closet:'Closet',entry:'Hall',garage:'Storage',other:'Room'};
+  const bb=e=>{const b=e.box;if(!b||!b.c||!b.s)return null;const[cx,,cz]=b.c,L=b.s[0],T=b.s[2],c=Math.cos(b.yaw||0),sn=Math.sin(b.yaw||0);
+    const q=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([u,v])=>{const x=u*L/2,z=v*T/2;return[(cx+x*c+z*sn)*sx,(cz-x*sn+z*c)*sy];});return[Math.min(...q.map(p=>p[0])),Math.min(...q.map(p=>p[1])),Math.max(...q.map(p=>p[0])),Math.max(...q.map(p=>p[1]))];};
+  const rooms=[],items=[];let dn=0,wn=0,fn=0;
+  for(const e of scene.elements||[]){
+    if(e.kind==='room'&&Array.isArray(e.poly)&&e.poly.length>=3){const t=TT[e.room]||typeFromLabel(e.name)||'Room';rooms.push({id:'R'+(rooms.length+1),type:t,label:clean(e.label||e.name)||RT[t].fi,number:null,unit:null,polygon:e.poly.map(P),printedAreaM2:null,conf:e.score??1});}
+    else if(e.kind==='door'||e.kind==='window'){const b=bb(e);if(b)items.push({id:e.kind==='door'?'D'+(++dn):'W'+(++wn),kind:e.kind,box:b,roomIds:[],conf:e.score??1});}
+    else if(FIXK[e.kind]){const b=bb(e);if(b)items.push({id:'F'+(++fn),kind:FIXK[e.kind],box:b,roomIds:[],conf:e.score??1});}}
+  linkItems(rooms,items);
+  return{drawing:{id:f.id,file:f.file,width:W,height:H,metersPerPixel:scene.size[0]/W,scale:{method:'team model (from wall thickness)',estimated:true},storeys:1},rooms,items,walls:[],texts:[],meta:{source:'team model'},_scene3d:scene};}
+
+/* ---------- the reading pool: several floors are read at the same time ---------- */
+const RQ=[];let RQrun=0,POOLCAP=0;
+function poolSize(){const n=CFG.reader==='api'?3:SAMPLER&&!CLAUDE_OFF?2:getKey()?4:2;return POOLCAP?Math.min(POOLCAP,n):n;}
+function queueRead(f){if(!f||f.deleted)return;if(!RQ.includes(f.id))RQ.push(f.id);f.status='queued';f.err=null;f.steps=[];f.rawTail=[];f.rt=null;f.usage=null;patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();pump();}
+function pump(){while(RQrun<poolSize()&&RQ.length){const f=FL[RQ.shift()];if(!f||f.deleted||f.status!=='queued')continue;RQrun++;readFloor(f).catch(e=>{console.warn(e);failRead(f,e);}).finally(()=>{RQrun--;pump();});}renderStatus();}
+samplerP.then(()=>pump());
+function rstep(f,k,s,d,o){let st=f.steps.find(x=>x.k===k);if(!st){st={k,t0:performance.now()};f.steps.push(st);}st.s=s;if(d!=null)st.d=d;if(o)Object.assign(st,o);if(s!=='run'&&st.ms==null)st.ms=performance.now()-st.t0;trSoon();return st;}
+function startRead(f){f.status='reading';f.t0=performance.now();f.rt={s:f.t0,e:0};f.live={n:0,rooms:0,doors:0,wins:0,fix:0};f.trace=[];f.rawTail=[];f.steps=[];inputSteps(f);patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();}
+function inputSteps(f){const P=f.img,m=f.meta||{};
+  if(f.src==='sample'){rstep(f,'load_sample','ok','A generated sample floor. It stands in for a reading, so no model is called. Upload a real plan to watch Claude read it.',{ms:0});return;}
+  if(m.name)rstep(f,'load_file','ok',`${m.name}${m.page?` · page ${m.page} of ${m.pages}`:''}${m.bytes?` · ${fmtBytes(m.bytes)}`:''}${P&&P.stats?` · ${P.stats.nw} × ${P.stats.nh} px`:''}`,{ms:0});
+  if(P&&P.stats)rstep(f,'prepare_image','ok',`Scaled to ${P.W} × ${P.H} px (${(P.W*P.H/1e6).toFixed(2)} MP) so the model's pixel coordinates match ours. Wall mask kept for snapping: Otsu threshold ${P.stats.thr}, ${P.stats.k} px opening.`,{ms:P.stats.ms});}
+function schemaSteps(f){const sc=f.schema,S=sc._stats||{},sm=sc.drawing.scale||{},mpp=sc.drawing.metersPerPixel;
+  if(S.lines!=null){rstep(f,'parse_lines',S.bad?'warn':'ok',`${S.lines} line${S.lines===1?'':'s'} parsed${S.bad?`, ${S.bad} unreadable and skipped`:''}${S.dropped?`, ${S.dropped} room outline${S.dropped>1?'s':''} too small or broken, dropped`:''}.`);
+    rstep(f,'snap_outlines','ok',sc.rooms.length?`${S.snapped} of ${sc.rooms.length} room outlines moved onto the wall faces in the image (mean shift ${(S.shift||0).toFixed(1)} px); the rest already matched.`:'No rooms to snap.');}
+  rstep(f,'detect_scale',!mpp||sm.estimated?'warn':'ok',mpp?`${fmtScale(mpp)} · ${S.scaleNote||sm.method}${sm.text?` · printed scale ${sm.text}`:''}`:'No scale bar, printed dimension or printed area found. Counts still work; areas are given only where they are printed.');
+  const nd=sc.items.filter(i=>i.kind==='door').length;
+  rstep(f,'link_items','ok',`${sc.rooms.length} rooms, ${sc.items.length} items placed in rooms${S.lines!=null?`; of ${nd} door${nd===1?'':'s'}, ${S.lg||0} joined to rooms by the model and ${S.ln||0} by nearest room`:''}.`);}
 async function readFloor(f){
-  if(f.src==='sample'){startRead(f);f.t0=0;await sleep(260);if(f.deleted)return;f.schema=JSON.parse(JSON.stringify(f.sample));return finishRead(f,'Sample');}
-  if(f.schemaJson){startRead(f);await sleep(120);const s=JSON.parse(JSON.stringify(f.schemaJson)),er=validateSchema(s);
-    if(!er.length){if(f.img){s.drawing.width=s.drawing.width||f.img.W;s.drawing.height=s.drawing.height||f.img.H;}f.schema=s;if(!f.img)putDef(f);return finishRead(f,'schema.json');}
+  if(f.src==='sample'){startRead(f);f.t0=0;await sleep(160+Math.random()*260);if(f.deleted)return;f.schema=JSON.parse(JSON.stringify(f.sample));return finishRead(f,'Sample');}
+  if(f.schemaJson){startRead(f);await sleep(60);const s0=JSON.parse(JSON.stringify(f.schemaJson)),team=isTeamSchematic(s0),s=team?fromTeamSchematic(s0):s0,er=validateSchema(s);
+    if(!er.length){if(f.img){if(team&&f.img.stats){s.drawing.width=f.img.stats.nw;s.drawing.height=f.img.stats.nh;}rescaleSchema(s,f.img);}f.schema=s;if(!f.img)putDef(f);
+      rstep(f,'load_schema','ok',`${team?'Team schematic converted':'schema.json checked against the contract'}: ${s.rooms.length} rooms, ${s.items.length} items${s.drawing.metersPerPixel?`, ${fmtScale(s.drawing.metersPerPixel)}`:', no scale'}. No model call.`);schemaSteps(f);return finishRead(f,team?'Team schematic':'schema.json');}
     if(!f.img)return failRead(f,{code:'api_error',message:'schema.json did not match the contract ('+er[0]+')'});}
   if(CFG.reader==='api')return readApi(f);
   return readClaude(f);
 }
 async function readClaude(f){
   const sampler=await samplerP,key=getKey(),useS=!!sampler&&!CLAUDE_OFF;
-  if(!useS&&!key){f.status='nokey';f.err='Reading uses Claude. In claude.ai it runs on your Claude account. Here, add an Anthropic API key (it stays in this browser).';patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();return;}
+  if(!useS&&!key){f.status='nokey';f.err='Reading uses Claude. In claude.ai it runs on your Claude account. Here, add an Anthropic API key (it stays in this browser).';patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();return;}
   startRead(f);
-  const raw={meta:null,rooms:[],doors:[],wins:[],fix:[]},P=f.img,prompt=READ_PROMPT(P.W,P.H);
-  const parse=makeParser(raw,o=>{if(f.deleted)return;const L=f.live;L.n++;if(o.t==='room')L.rooms++;else if(o.t==='door')L.doors++;else if(o.t==='window')L.wins++;else if(o.t==='fix')L.fix++;if(o.t!=='meta'){f.trace.push(o);addLive(f,o);}patchSoon(f);});
+  const raw={meta:null,rooms:[],doors:[],wins:[],fix:[]},P=f.img,prompt=READ_PROMPT(P.W,P.H),usage={},via=useS?'your claude.ai account':'Anthropic API, key in this browser';
+  const st=rstep(f,'claude.read_plan','run',`${API_MODEL} · effort low · ${via} · sending the image and the tracing prompt…`);
+  const live=w=>{const L=f.live;st.d=`${API_MODEL} · effort low · ${via} · ${w}: ${L.rooms} room${L.rooms===1?'':'s'}, ${L.doors} door${L.doors===1?'':'s'}, ${L.wins} window${L.wins===1?'':'s'}, ${L.fix} fixture${L.fix===1?'':'s'}`;};
+  const parse=makeParser(raw,o=>{if(f.deleted)return;const L=f.live;L.n++;if(o.t==='room')L.rooms++;else if(o.t==='door')L.doors++;else if(o.t==='window')L.wins++;else if(o.t==='fix')L.fix++;if(o.t!=='meta'){f.trace.push(o);addLive(f,o);}
+    f.rawTail.push(JSON.stringify(o).slice(0,160));if(f.rawTail.length>6)f.rawTail.shift();live('streaming JSON lines');patchSoon(f);trSoon();});
   const ctl=new AbortController();f.ctl=ctl;patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderReadBan();
-  try{const text=useS?(await sampler(prompt,{images:[P.blob],signal:ctl.signal,effort:'low',onText:({text})=>parse(text)})).text:await apiRead(key,P.blob,prompt,t=>parse(t),ctl.signal);
+  try{const text=useS?(await sampler(prompt,{images:[P.blob],signal:ctl.signal,effort:'low',onText:({text})=>parse(text)})).text:await apiRead(key,P.blob,prompt,t=>parse(t),ctl.signal,usage);
     if(f.deleted)return;parse(text+'\n');parse.whole(text);
+    const measured=usage.in!=null,tin=measured?usage.in:Math.round(P.W*P.H/750+prompt.length/3.6),tout=usage.out!=null?usage.out:Math.round(text.length/3.6);f.usage={in:tin,out:tout,measured};
+    live('read');rstep(f,'claude.read_plan','ok',`${st.d} · ${fmtTok(tin)} tokens in, ${fmtTok(tout)} out ${measured?'(measured)':'(estimated)'}`);
     if(!raw.rooms.length)throw{code:raw.meta&&raw.meta.kind==='other'?'not_plan':'no_rooms'};
-    f.schema=toSchema(raw,P,f);f.ctl=null;finishRead(f,useS?'Claude':'Claude (API key)');}
-  catch(e){f.ctl=null;if(useS&&e&&HARD.test(e.code||''))CLAUDE_OFF=true;failRead(f,e);}
+    f.schema=toSchema(raw,P,f);f.ctl=null;schemaSteps(f);finishRead(f,useS?'Claude':'Claude (API key)');}
+  catch(e){f.ctl=null;
+    if(e&&e.code==='rate_limited'){POOLCAP=1;if(!useS&&!f.retried&&!f.deleted){f.retried=true;rstep(f,'claude.read_plan','warn','Rate limited by the API. Reading one floor at a time from now on; this floor tries once more in a moment.');f.status='queued';f.rt=null;patchCard(f);renderStatus();
+      setTimeout(()=>{if(!f.deleted&&f.status==='queued'){if(!RQ.includes(f.id))RQ.push(f.id);pump();}},Math.max(4,e.retryAfter||10)*1000);return;}}
+    if(useS&&e&&HARD.test(e.code||''))CLAUDE_OFF=true;
+    const s2=f.steps.find(x=>x.k==='claude.read_plan');if(s2&&s2.s==='run')rstep(f,'claude.read_plan','err',errInfo(e)[0]);
+    failRead(f,e);}
 }
-async function readApi(f){ // our own model, later: POST {endpoint}/analyze -> BluelineSchema
-  startRead(f);f.live=null;const ctl=new AbortController();f.ctl=ctl;patchCard(f);
+/* our own model: the team server (POST /api/plan, GET /api/scene), or any server with /analyze -> schema.json */
+async function readApi(f){startRead(f);f.live=null;const ctl=new AbortController();f.ctl=ctl;patchCard(f);const ep=CFG.endpoint.replace(/\/$/,'');
   try{const blob=f.img?f.img.blob:f.sample?await samplePng(f):null;if(!blob)throw{code:'nofile'};
-    const fd=new FormData();fd.append('file',blob,f.file||'sheet.png');fd.append('sheet',JSON.stringify({id:f.id,building:f.bId,level:levelOf(f)}));
-    let res;try{res=await fetch(CFG.endpoint.replace(/\/$/,'')+'/analyze',{method:'POST',body:fd,signal:ctl.signal});}catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'api_error',message:'could not reach '+CFG.endpoint};}
-    if(!res.ok)throw{code:'api_error',message:'the API answered '+res.status};
-    const js=await res.json(),s=js.schema||js,er=validateSchema(s);if(er.length)throw{code:'api_error',message:'schema did not match: '+er[0]};
-    f.schema=s;f.ctl=null;if(!f.img&&!f.sample)putDef(f);finishRead(f,'Blueline API');}
-  catch(e){f.ctl=null;failRead(f,e);}
-}
-function finishRead(f,by){if(f.deleted)return;f.status='read';f.readBy=by;f.err=null;f.errShort='';f.v++;f.justRead=true;f._rects=null;if(!f.sample)f._simg=null;
-  patchCard(f);if(f.id===ST.fid&&ST.view==='plan'){if(VB[f.id]&&VB[f.id].auto)delete VB[f.id];renderPlan();}sync3D();rerunAnswers();renderStatus();renderAskEmpty();}
-function failRead(f,e){if(f.deleted)return;const[msg,short]=errInfo(e);
+    rstep(f,'model.upload','run',`POST ${ep}/api/plan · ${fmtBytes(blob.size)}`);
+    let res;try{res=await fetch(ep+'/api/plan',{method:'POST',body:blob,headers:{'X-Filename':(f.file||'plan').replace(/[^\w.\- ]/g,'_')+'.png'},signal:ctl.signal});}
+    catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'api_error',message:window.claude?'claude.ai does not let this page call other servers. Download the page and open it locally.':`could not reach ${ep}. Is it running, with CORS allowed?`};}
+    if(res.status===404){rstep(f,'model.upload','warn','No /api/plan on this server. Trying the schema contract (/analyze).');return await readAnalyze(f,ep,blob,ctl);}
+    if(!res.ok)throw{code:'api_error',message:`${ep}/api/plan answered ${res.status}`};
+    const pl=await res.json();rstep(f,'model.upload','ok',`plan ${pl.id} · ${pl.width} × ${pl.height} px · text from ${pl.text_source||'?'} (${pl.n_text||0} lines) · ${pl.seconds} s on the server`);
+    rstep(f,'model.scene','run',`GET /api/scene?id=${pl.id}`);
+    const r2=await fetch(ep+'/api/scene?id='+encodeURIComponent(pl.id),{signal:ctl.signal});if(!r2.ok)throw{code:'api_error',message:`/api/scene answered ${r2.status}`};
+    const scene=await r2.json(),n=k=>(scene.elements||[]).filter(e=>e.kind===k).length;
+    rstep(f,'model.scene','ok',`${n('wall')} walls, ${n('door')} doors, ${n('window')} windows, ${n('room')} rooms · ${(+scene.px_per_m).toFixed(1)} px per m, from the wall thickness · ${scene.object_detector||'detector'}`);
+    f.schema=fromTeamScene(scene,f);f.ctl=null;if(!f.img&&!f.sample)putDef(f);schemaSteps(f);finishRead(f,'Team model');}
+  catch(e){f.ctl=null;const st=f.steps.find(x=>x.s==='run');if(st)rstep(f,st.k,'err',errInfo(e)[0]);failRead(f,e);}}
+async function readAnalyze(f,ep,blob,ctl){const fd=new FormData();fd.append('file',blob,f.file||'sheet.png');fd.append('sheet',JSON.stringify({id:f.id,building:f.bId,level:levelOf(f)}));
+  rstep(f,'model.analyze','run',`POST ${ep}/analyze`);
+  let res;try{res=await fetch(ep+'/analyze',{method:'POST',body:fd,signal:ctl.signal});}catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'api_error',message:'could not reach '+ep};}
+  if(!res.ok)throw{code:'api_error',message:'the API answered '+res.status};
+  const js=await res.json(),s=js.schema||js,er=validateSchema(s);if(er.length)throw{code:'api_error',message:'schema did not match: '+er[0]};
+  if(f.img)rescaleSchema(s,f.img);rstep(f,'model.analyze','ok',`schema.json: ${s.rooms.length} rooms, ${s.items.length} items`);
+  f.schema=s;f.ctl=null;if(!f.img&&!f.sample)putDef(f);schemaSteps(f);finishRead(f,'Model API');}
+function finishRead(f,by){if(f.deleted)return;f.status='read';f.readBy=by;f.err=null;f.errShort='';f.v++;f.justRead=true;if(f.rt)f.rt.e=performance.now();if(!f.sample)f._simg=null;
+  patchCard(f);if(f.id===ST.fid&&ST.view==='plan'){if(VB[f.id]&&VB[f.id].auto)delete VB[f.id];renderPlan();}sync3D();rerunAnswers();renderStatus();renderAskEmpty();trSoon();}
+function failRead(f,e){if(f.deleted)return;const[msg,short]=errInfo(e);if(f.rt&&!f.rt.e)f.rt.e=performance.now();
   if(e&&e.code==='cancelled'){f.status='idle';f.err='Stopped. Read it again when you are ready.';f.errShort='stopped';}
   else if(CLAUDE_OFF&&!getKey()&&CFG.reader==='claude'){f.status='nokey';f.err=msg+' You can add an Anthropic API key instead.';f.errShort=short;}
   else{f.status='error';f.err=msg;f.errShort=short;}
-  patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();}
+  patchCard(f);if(f.id===ST.fid&&ST.view==='plan')renderPlan();labels3D();renderStatus();trSoon();}
 async function samplePng(f){const img=await svgImage(f);const c=document.createElement('canvas');c.width=PW;c.height=PH;c.getContext('2d').drawImage(img,0,0);return new Promise(r=>c.toBlob(r,'image/png'));}
 function svgImage(f){if(!f.sample&&!f.schema)return Promise.reject(new Error('nothing to draw'));
   if(!f._simg)f._simg=(async()=>{const inner=f.sample?drawSample(f.sample):drawGeneric(f.schema),[W,H]=dims(f);
@@ -700,78 +858,130 @@ function svgImage(f){if(!f.sample&&!f.schema)return Promise.reject(new Error('no
    6. Answer engine: pure code over the read floors. Questions in English
       or Finnish; every counted item is returned as evidence.
    ===================================================================== */
+/* Question rules. The Stoa templates (EN, FI, DE, FR, IT) follow the team's answer.py, so the
+   interface answers exactly as the team's scoring does; then the general wording. First match wins. */
 const TARGETS=[
-  {re:/\bdoors?\b|\bov(i|et|ea|ia|ien|ensa)\b/,t:{items:['door']}},
-  {re:/\bwindows?\b|ikkun/,t:{items:['window']}},
-  {re:/\btoilets?\b|\bwcs?\b(?! ?rooms?)|vess|wc-istu|käymälä/,t:{items:['toilet']}},
-  {re:/\bshowers?\b|suihk/,t:{items:['shower']}},
-  {re:/\bbath ?tubs?\b|kylpyamm/,t:{items:['bathtub']}},
-  {re:/\bkitchen sinks?\b|tiskiallas/,t:{items:['kitchen_sink']}},
-  {re:/\bsinks?\b|\bbasins?\b|altai|allas/,t:{items:['sink','kitchen_sink']}},
-  {re:/apartments?|\bflats?\b|\bunits?\b|\bdwellings?\b|asun(to|no|toj|toa)/,t:{units:true}},
-  {re:/saunas?\b|saunoj|saunaa/,t:{rooms:['Sauna']}},
-  {re:/bedrooms?|makuuhuon|\bmh\b/,t:{rooms:['Bedroom']}},
-  {re:/living ?rooms?|olohuon|\boh\b/,t:{rooms:['Living']}},
-  {re:/kitchens?|keitti/,t:{rooms:['Kitchen']}},
-  {re:/dining|ruokailu/,t:{rooms:['Dining']}},
-  {re:/bathrooms?|kylpyhuon|\bkh\b|pesuhuon|wash ?rooms?/,t:{rooms:['Bathroom','Wash']}},
-  {re:/closets?|wardrobes?|walk-in|vaatehuon/,t:{rooms:['Closet']}},
-  {re:/balcon(y|ies)|terrace|parvek/,t:{rooms:['Balcony']}},
-  {re:/meeting|neuvottel/,t:{rooms:['Meeting']}},
-  {re:/open[- ]?offices?|avotoimist/,t:{rooms:['OpenOffice']}},
-  {re:/offices?|toimisto|työhuon/,t:{rooms:['Office','OpenOffice']}},
-  {re:/bike|polkupyö/,t:{rooms:['Bike']}},
-  {re:/storage|stores?\b|varast/,t:{rooms:['Storage','Bike']}},
-  {re:/stairs?|stairwells?|porra/,t:{rooms:['Stair']}},
-  {re:/corridors?|käytäv|hallways?/,t:{rooms:['Corridor']}},
-  {re:/lifts?\b|elevators?|hissi/,t:{rooms:['Lift']}},
-  {re:/\brooms?\b|huonei|huonett|\btiloja\b|\bspaces?\b/,t:{allRooms:true}},
+  {re:/sinks and wash ?basins|pesu- ja tiskial/,t:{items:['sink','kitchen_sink']},why:'sinks and washbasins together'},
+  {re:/showers and bath ?tubs|suihkua ja kylpyamme/,t:{items:['shower','bathtub']},why:'showers and bathtubs together'},
+  {re:/bathrooms or washrooms|kylpy- tai pesuhuone/,t:{rooms:['Bathroom','Wash']},why:'bathrooms and washrooms, not separate WC rooms'},
+  {re:/separate wc|wc rooms?|toilet rooms?|wc-til/,t:{rooms:['WC']},why:'separate WC rooms'},
+  {re:/toilet bowls?|wc seats?|wc-istu/,t:{items:['toilet']},why:'toilet bowls'},
+  {re:/\bdoors?\b|\bov(i|et|ea|ia|ien|ensa)\b|türen|\btür\b|\bportes?\b/,t:{items:['door']},why:'doors'},
+  {re:/\bwindows?\b|ikkun|fenster|fenêtre|finestr/,t:{items:['window']},why:'windows'},
+  {re:/\btoilets?\b|\bwcs?\b|vess|käymälä/,t:{items:['toilet']},why:'toilets'},
+  {re:/\bshowers?\b|suihk|dusche|douche|\bdocc/,t:{items:['shower']},why:'showers'},
+  {re:/\bbath ?tubs?\b|kylpyamm|badewanne|baignoire|vasche/,t:{items:['bathtub']},why:'bathtubs'},
+  {re:/\bkitchen sinks?\b|tiskiallas/,t:{items:['kitchen_sink']},why:'kitchen sinks'},
+  {re:/wash ?basins?|lavab|pesualtai|pesuallas/,t:{items:['sink']},why:'washbasins'},
+  {re:/\bsinks?\b|\bbasins?\b|altai|allas/,t:{items:['sink','kitchen_sink']},why:'sinks'},
+  {re:/apartments?|\bflats?\b|residential units?|\bdwellings?\b|asun(to|no|toj|toa)|wohnung|appartament|appartement|logement/,t:{units:true},why:'apartments'},
+  {re:/saunas?\b|saunoj|saunaa/,t:{rooms:['Sauna']},why:'saunas'},
+  {re:/bedrooms?|makuuhuon|\bmh\b|schlafzimmer/,t:{rooms:['Bedroom']},why:'bedrooms'},
+  {re:/living ?rooms?|olohuon|\boh\b|wohnzimmer/,t:{rooms:['Living']},why:'living rooms'},
+  {re:/kitchens?|keitti|küche|cuisine|cucin/,t:{rooms:['Kitchen']},why:'kitchens'},
+  {re:/dining|ruokailu/,t:{rooms:['Dining']},why:'dining rooms'},
+  {re:/bathrooms?|kylpyhuon|\bkh\b|pesuhuon|wash ?rooms?/,t:{rooms:['Bathroom','Wash']},why:'bathrooms'},
+  {re:/closets?|wardrobes?|walk-in|vaatehuon/,t:{rooms:['Closet']},why:'closets'},
+  {re:/balcon(y|ies)|terrace|parvek|balkon/,t:{rooms:['Balcony']},why:'balconies'},
+  {re:/meeting|neuvottel/,t:{rooms:['Meeting']},why:'meeting rooms'},
+  {re:/open[- ]?offices?|avotoimist/,t:{rooms:['OpenOffice']},why:'open offices'},
+  {re:/offices?|toimisto|työhuon/,t:{rooms:['Office','OpenOffice']},why:'offices'},
+  {re:/bike|polkupyö/,t:{rooms:['Bike']},why:'bike storage'},
+  {re:/storage|stores?\b|varast/,t:{rooms:['Storage','Bike']},why:'storage rooms'},
+  {re:/stairs?|stairwells?|porra|treppe/,t:{rooms:['Stair']},why:'stairs'},
+  {re:/corridors?|käytäv|hallways?/,t:{rooms:['Corridor']},why:'corridors'},
+  {re:/lifts?\b|elevators?|hissi/,t:{rooms:['Lift']},why:'lifts'},
+  {re:/\brooms?\b|huonei|huonett|\btiloja\b|\bspaces?\b|räume|pièces|locali/,t:{allRooms:true},why:'rooms'},
 ];
 const UNSUP=/\b(height|korkeus|volume|tilavuus|materials?|materiaali|price|cost to build|hinta|year|vuosi|fire|palo|insulation|eriste|thickness|paksuus|who|architect|arkkitehti|ceiling|katto)\b|huonekorkeu/;
+const QUOTE_RE=/[«“„"'‘]\s*(.+?)\s*[»”“"'’](?=\s*(?:\)|,|are\b|is\b|y a\b|ci sono|gibt|sind|on\b|in\b|im\b|à\b|en\b|op\b|på\b|korrusel|na\b|\?|$))/i;
+const quoted=raw=>{const m=String(raw).match(QUOTE_RE);return m?m[1]:null;};
+const APT_RE=/(?:[Aa]partment|[Ww]ohnung|[Aa]ppartement|[Aa]ppartamento|[Aa]sunto|[Aa]sunnon|[Ff]lat|[Uu]nit)\s+([A-Z0-9]{1,4}|[a-z](?=[\s?,.]|$))(?!\w)/;
+const ROOMNO_RE=/\b(?:room|raum|pièce|piece|locale|local|huone|tila)\s+([A-Za-z]{0,3}\d+(?:[.,]\d+)*[A-Za-z]?)(?!\w)/i;
 function parseQ(raw){
-  const s=raw.toLowerCase().replace(/[?!.,]/g,' ').replace(/\s+/g,' ').trim(),P={raw,s};
-  P.area=/\barea\b|\bm2\b|m²|square met|\bsq ?m\b|neliö|pinta-?ala|how big|how large|kuinka suuri|floor space/.test(s);
+  const t0=performance.now(),s=raw.toLowerCase().replace(/[?!.,;:]/g,' ').replace(/\s+/g,' ').trim(),P={raw,s};let m;
+  P.lang=/[äö]|kuinka|montako|pohjapiir|kerros/.test(s)&&!/\b(wie|gibt|geschoss)\b/.test(s)?'Finnish':/\b(wie|gibt|geschoss|grundriss|räume|wohnung|nettofläche)\b/.test(s)?'German':/\b(combien|quelle|pièces?|étage|surface)\b/.test(s)?'French':/\b(quant[ie]|qual|locali|piano|pianta)\b/.test(s)?'Italian':'English';
+  P.area=/\barea\b|\bm2\b|m²|square met|\bsq ?m\b|neliö|pinta-?ala|how big|how large|kuinka suuri|floor space|fläche|surface|superficie|oppervlakte|nettoareal|pind|powierzchni/.test(s);
   P.largest=/largest|biggest|suurin|isoin/.test(s);P.smallest=/smallest|pienin/.test(s);
   P.rank=/which (floor|level|storey|building)|missä kerroksessa|mikä kerros|\bmost\b|eniten|fewest|least|vähiten/.test(s);P.least=/fewest|least|vähiten/.test(s);
   P.withSauna=/with (a |an |own |their own )?sauna|saunallis|joissa on sauna|has a sauna|have a sauna|own sauna/.test(s);
   P.project=/whole project|entire project|all buildings|both buildings|across the project|in the project|koko projekti|kaikissa rakennuksissa/.test(s);
-  P.wide=/\btotal\b|in total|altogether|all floors|every floor|each floor|per floor|whole building|entire building|in the building|yhteensä|koko rakennu|kaikki kerrokset|kaikissa kerroksissa|rakennuksessa/.test(s);
-  P.floorsQ=/how many (floors|storeys|stories|levels)|number of (floors|storeys|levels)|montako kerrosta|kuinka monta kerrosta/.test(s);
-  let m=s.match(/(?:floor|level|storey|kerros|kerroksessa|kerroksen|krs)\s*(\d{1,2})\b|\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:floor|level|storey)\b|\b(\d{1,2})\.?\s*(?:kerros|kerroksessa|kerroksen|krs)\b/);
+  P.wide=/all floors|every floor|each floor|per floor|whole building|entire building|in the building|koko rakennu|kaikki kerrokset|kaikissa kerroksissa|rakennuksessa/.test(s);
+  P.sheet=/this (floor )?plan|this drawing|this sheet|this floor\b|on the floor plan|tässä kerroksessa|pohjapiirustu|diese[mns]? (geschoss|grundriss|plan)|cet étage|ce plan|questo piano|questa pianta/.test(s);
+  P.floorsQ=/how many (floors|storeys|stories|levels)|number of (floors|storeys|levels)|montako kerrosta|kuinka monta kerrosta|wie viele (geschosse|stockwerke)/.test(s);
+  m=s.match(/(?:floor|level|storey|kerros|kerroksessa|kerroksen|krs)\s*(\d{1,2})\b|\b(\d{1,2})(?:st|nd|rd|th)?\s*(?:floor|level|storey)\b|\b(\d{1,2})\.?\s*(?:kerros|kerroksessa|kerroksen|krs)\b/);
   if(m&&!P.floorsQ)P.level=+(m[1]||m[2]||m[3]);
   if(/ground floor|pohjakerros|katutaso/.test(s))P.level=1;if(/top floor|ylin kerros|ylimmä/.test(s))P.level='top';
   m=s.match(/building ([a-z])\b|\b([a-z])[- ]?(?:building|talo|rakennus|talossa|rakennuksessa)\b|talo ([a-z])\b/);
   if(m){const id=(m[1]||m[2]||m[3]).toUpperCase();if(bld(id))P.bld=id;}
-  if(P.floorsQ)P.t={floors:true};else for(const T of TARGETS)if(T.re.test(s)){P.t=T.t;break;}
+  const ql=quoted(raw);P.kind='count';
+  if(P.floorsQ){P.t={floors:true};P.rule=P.sheet?'Count · storeys drawn on this sheet':'Count · floors in the building';}
+  else if(!P.area&&ql&&/labell?ed|named|called|marked|bezeichnung|désignation|designation|denominazione|nimellä|merkitty/.test(s)){P.t={label:ql};P.rule=`Count · rooms labelled “${ql}”`;}
+  else if(P.area&&/numbered|nummerierten|numérotées|numerati|numeroidut/.test(s)){P.t={area:true};P.kind='indoor';P.rule='Area · every numbered indoor room, outdoor spaces left out';}
+  else if(P.area&&(m=raw.match(APT_RE))){P.t={area:true};P.kind='aptArea';P.apt=m[1].toUpperCase();P.rule=`Area · apartment ${P.apt}, outdoor spaces left out`;}
+  else if(P.area&&(m=raw.match(ROOMNO_RE))){P.t={area:true};P.kind='roomNo';P.no=m[1];P.label=ql;P.rule=`Area · room ${P.no}${ql?` (“${ql}”)`:''}`;}
+  else if(P.area&&ql){P.t={label:ql};P.kind='labelArea';P.rule=`Area · rooms labelled “${ql}”`;}
+  else for(const T of TARGETS){const mm=T.re.exec(s);if(mm){P.t=T.t;P.hit=mm[0];P.why=T.why;break;}}
   if(P.t&&P.t.units&&/sauna/.test(s))P.withSauna=true;
-  if(!P.t&&(P.area||P.largest||P.smallest))P.t={allRooms:true};
+  if(!P.t&&(P.area||P.largest||P.smallest)){P.t={allRooms:true};P.why='rooms';}
   P.unsupported=!P.t||(UNSUP.test(s)&&!P.area);
-  P.kind=P.area||P.largest||P.smallest?(P.t&&P.t.units?'unitArea':(P.largest||P.smallest)?'extreme':'area'):'count';
-  return P;
+  if(P.kind==='count'&&P.t&&!P.t.floors&&!P.t.label)P.kind=P.area||P.largest||P.smallest?(P.t.units?'unitArea':(P.largest||P.smallest)?'extreme':'area'):'count';
+  if(!P.rule)P.rule=P.unsupported?(P.t?'Not something the drawings can show':'No rule matched this question'):`${P.kind==='count'?'Count':P.kind==='extreme'?(P.smallest?'Smallest':'Largest'):P.kind==='unitArea'?'Area · apartments':'Area'} · ${P.why||'rooms'}${P.withSauna?' with a sauna':''}`;
+  P.ms=performance.now()-t0;return P;
 }
 function nounOf(P,n){const t=P.t,one=n===1;if(!t)return'';
-  if(t.items)return t.items.length>1?(one?'sink':'sinks'):KIND[t.items[0]][one?0:1];
+  if(t.items)return t.items.length>1?(t.items.includes('shower')?(one?'shower or bathtub':'showers and bathtubs'):(one?'sink':'sinks')):KIND[t.items[0]][one?0:1];
   if(t.units)return(one?'apartment':'apartments')+(P.withSauna?' with a sauna':'');
-  if(t.floors)return one?'floor':'floors';if(t.allRooms)return one?'room':'rooms';
+  if(t.label)return`${one?'room':'rooms'} labelled “${t.label}”`;
+  if(t.floors)return P.sheet?(one?'storey':'storeys'):(one?'floor':'floors');if(t.allRooms)return one?'room':'rooms';if(t.area)return'm²';
   const r=RT[t.rooms[0]];return one?r.en.toLowerCase():r.pl;}
 const roomArea=(sc,r)=>r.printedAreaM2!=null?+r.printedAreaM2:sc.drawing.metersPerPixel?shoelace(r.polygon)*sc.drawing.metersPerPixel**2:null;
+const unitsOf=sc=>{const u=[...new Set(sc.rooms.filter(r=>r.unit).map(r=>r.unit))];return u.length?u:(sc.apartments||[]);};
 function evalSheet(sc,P){
-  const t=P.t,ev=[],x={np:0,nt:0};let val=0;
-  const roomSet=t.allRooms?sc.rooms.filter(r=>!['Corridor','Lift','Balcony'].includes(r.type)):t.rooms?sc.rooms.filter(r=>t.rooms.includes(r.type)):[];
+  const t=P.t,ev=[],x={np:0,nt:0,rows:[]};let val=0;
+  const tally=rs=>rs.forEach(([r,a])=>{val+=a;ev.push({id:r.id,type:'room'});if(r.printedAreaM2!=null)x.np++;else x.nt++;x.rows.push([r,a]);});
+  const measure=rs=>{const q=rs.map(r=>[r,roomArea(sc,r)]),miss=q.filter(z=>z[1]==null).length;if(miss)return{val:null,ev:[],noScale:true,x:{...x,miss,of:rs.length}};tally(q);return{val,ev,x};};
+  const numbered=sc.rooms.some(r=>r.number);
+  if(P.kind==='roomNo'){let hit=sc.rooms.filter(r=>r.number&&normNo(r.number)===normNo(P.no));
+    if(!hit.length&&P.label){const byL=sc.rooms.filter(r=>normL(r.label)===normL(P.label));if(byL.length===1){hit=byL;x.byLabel=true;}}
+    if(!hit.length)return{val:null,ev:[],nf:true,x};x.room=hit[0];return measure([hit[0]]);}
+  if(P.kind==='aptArea'){const rs=sc.rooms.filter(r=>r.unit&&aptKey(r.unit)===P.apt&&!isOutdoor(r)&&(!numbered||r.number));if(!rs.length)return{val:null,ev:[],nf:true,x};return measure(rs);}
+  if(P.kind==='indoor')return measure(sc.rooms.filter(r=>!isOutdoor(r)&&!isVoid(r)&&(!numbered||r.number)));
+  const roomSet=t.label?sc.rooms.filter(r=>normL(r.label)===normL(t.label)):t.allRooms?sc.rooms.filter(r=>!['Corridor','Lift','Balcony'].includes(r.type)):t.rooms?sc.rooms.filter(r=>roomIs(r,t.rooms)):[];
   if(P.kind==='count'){
     if(t.items){sc.items.filter(i=>t.items.includes(i.kind)).forEach(i=>ev.push({id:i.id,type:'item'}));val=ev.length;}
-    else if(t.units){const all=[...new Set(sc.rooms.filter(r=>r.unit).map(r=>r.unit))];if(!all.length)return{val:null,ev:[],noUnits:true};
+    else if(t.units){const all=unitsOf(sc);if(!all.length)return{val:null,ev:[],noUnits:true};
       const us=all.filter(u=>!P.withSauna||sc.rooms.some(r=>r.unit===u&&r.type==='Sauna'));us.forEach(u=>sc.rooms.filter(r=>r.unit===u&&(!P.withSauna||r.type==='Sauna'||r.type==='Hall')).forEach(r=>ev.push({id:r.id,type:'room'})));val=us.length;x.units=us;}
     else{roomSet.forEach(r=>ev.push({id:r.id,type:'room'}));val=roomSet.length;}
     return{val,ev,x};}
-  const tally=rs=>rs.forEach(([r,a])=>{val+=a;ev.push({id:r.id,type:'room'});if(r.printedAreaM2!=null)x.np++;else x.nt++;});
-  if(P.kind==='area'||P.kind==='extreme'){let rs=roomSet.map(r=>[r,roomArea(sc,r)]).filter(q=>q[1]!=null);if(!rs.length)return{val:roomSet.length?null:0,ev:[],noScale:!!roomSet.length,x};
-    if(P.kind==='extreme'){rs.sort((a,b)=>P.smallest?a[1]-b[1]:b[1]-a[1]);rs=[rs[0]];x.room=rs[0][0];}tally(rs);return{val,ev,x};}
-  const units=[...new Set(sc.rooms.filter(r=>r.unit).map(r=>r.unit))].map(u=>{const rs=sc.rooms.filter(r=>r.unit===u).map(r=>[r,roomArea(sc,r)]).filter(q=>q[1]!=null);return[u,rs,rs.reduce((a,q)=>a+q[1],0)];});
+  if(P.kind==='area'||P.kind==='labelArea')return roomSet.length?measure(roomSet):{val:0,ev:[],x};
+  if(P.kind==='extreme'){let rs=roomSet.map(r=>[r,roomArea(sc,r)]).filter(q=>q[1]!=null);if(!rs.length)return{val:roomSet.length?null:0,ev:[],noScale:!!roomSet.length,x};
+    rs.sort((a,b)=>P.smallest?a[1]-b[1]:b[1]-a[1]);x.room=rs[0][0];tally([rs[0]]);return{val,ev,x};}
+  const units=unitsOf(sc).map(u=>{const rs=sc.rooms.filter(r=>r.unit===u).map(r=>[r,roomArea(sc,r)]).filter(q=>q[1]!=null);return[u,rs,rs.reduce((a,q)=>a+q[1],0)];});
   if(!units.length)return{val:null,ev:[],noUnits:true};
   if(P.largest||P.smallest){units.sort((a,b)=>P.smallest?a[2]-b[2]:b[2]-a[2]);x.unit=units[0][0];tally(units[0][1]);}else units.forEach(u=>tally(u[1]));
   return{val,ev,x};
 }
+/* names and one-line results for the trace */
+function toolName(P){const t=P.t||{};
+  if(P.kind==='roomNo')return`room_area(number="${P.no}")`;if(P.kind==='aptArea')return`apartment_area("${P.apt}", indoor)`;if(P.kind==='indoor')return'sum_area(numbered, indoor)';
+  if(P.kind==='labelArea')return`sum_area(label="${t.label}")`;if(t.items)return`count_items(kind=${t.items.join('|')})`;
+  if(t.units)return P.kind==='count'?`count_apartments(${P.withSauna?'with sauna':''})`:'apartment_areas()';if(t.label)return`count_rooms(label="${t.label}")`;
+  const ty=t.allRooms?'all':(t.rooms||[]).join('|');return P.kind==='count'?`count_rooms(type=${ty})`:P.kind==='extreme'?`${P.smallest?'min':'max'}_area(type=${ty})`:`sum_area(type=${ty})`;}
+const listIds=ids=>!ids.length?'none':ids.length<=14?ids.join(', '):ids.slice(0,12).join(', ')+` … ${ids[ids.length-1]}`;
+function perDetail(P,sc,p){
+  if(p.noUnits)return'no apartments are marked on this drawing';
+  if(p.nf)return P.kind==='roomNo'?`no room numbered ${P.no}${P.label?` or named “${P.label}”`:''}`:`no rooms belong to apartment ${P.apt}`;
+  if(p.noScale)return`${p.x&&p.x.miss?`${p.x.miss} of ${p.x.of} rooms have`:'these rooms have'} no printed area and the drawing has no scale`;
+  if(P.kind==='count'){if(P.t.items)return`${p.val} · ${listIds(p.ev.map(e=>e.id))}`;if(P.t.units)return`${p.val} · ${(p.x.units||[]).join(', ')||'none'}`;
+    const rs=p.ev.map(e=>sc.rooms.find(r=>r.id===e.id)).filter(Boolean);return`${p.val}${rs.length?' · '+rs.slice(0,8).map(r=>`${r.label||RT[r.type].fi} (${r.id})`).join(', ')+(rs.length>8?` and ${rs.length-8} more`:''):''}`;}
+  const rows=(p.x&&p.x.rows)||[];if(!rows.length)return'0 m² · no matching rooms';
+  return`${rows.slice(0,6).map(([r,a])=>`${r.number?r.number+' ':''}${r.label||RT[r.type].fi} ${f1(a)} ${r.printedAreaM2!=null?'printed':'traced'}`).join(' + ')}${rows.length>6?` + ${rows.length-6} more`:''} = ${f1(p.val)} m²`;}
+function verifyText(A,P,ok){const isA=A.unit==='m²',n=ok.reduce((a,p)=>a+(p.dim?0:p.ev.length),0);
+  if(!isA){const it=P.t.items;return`${n} ${it?'item':'room'}${n===1?'':'s'} marked on ${ok.length>1?ok.length+' drawings':'the drawing'}${it?'; each has a number you can click to zoom to it':''}.`;}
+  let np=0,nt=0;const dif=[];ok.forEach(p=>{if(p.dim)return;const sc=FL[p.fid].schema,mpp=sc.drawing.metersPerPixel;(p.x.rows||[]).forEach(([r])=>{if(r.printedAreaM2!=null){np++;if(mpp){const tr=shoelace(r.polygon)*mpp*mpp;if(r.printedAreaM2>0)dif.push(Math.abs(tr-r.printedAreaM2)/r.printedAreaM2);}}else nt++;});});
+  const avg=dif.length?dif.reduce((a,b)=>a+b,0)/dif.length*100:null;
+  return`${np} area${np===1?'':'s'} printed on the drawing${nt?`, ${nt} measured from the outline × scale²`:''}.${avg!=null?` Outline check: traced and printed areas differ by ${avg.toFixed(1)}% on average (${dif.length} room${dif.length===1?'':'s'}).`:''} Every room used is outlined on its floor.`;}
 function scopeFloors(sc){if(!sc)return[];if(sc.type==='floor')return FL[sc.id]&&!FL[sc.id].deleted?[FL[sc.id]]:[];
   if(sc.type==='building'){const b=bld(sc.id);return b?b.floors.map(id=>FL[id]):[];}return PROJ.buildings.flatMap(b=>b.floors.map(id=>FL[id]));}
 function scopeName(sc){if(!sc)return'';if(sc.type==='floor'){const f=FL[sc.id];return f&&!f.deleted?`${bld(f.bId).name} · ${fname(f)}`:'A deleted floor';}
@@ -781,26 +991,42 @@ function resolveScope(P,sc){
   const cb=sc.type==='floor'?FL[sc.id].bId:sc.type==='building'?sc.id:ST.bId;
   if(P.level!=null){const b=bld(P.bld||cb);if(!b||!b.floors.length)return null;const i=P.level==='top'?b.floors.length-1:P.level-1;return b.floors[i]?{type:'floor',id:b.floors[i]}:null;}
   if(P.bld)return{type:'building',id:P.bld};if(P.project)return{type:'project'};
-  if((P.rank||P.wide||P.floorsQ)&&sc.type==='floor')return{type:'building',id:cb};
+  const cur=FL[ST.fid];if(P.sheet&&!P.wide&&sc.type!=='floor'&&cur&&!cur.deleted&&(sc.type==='project'||cur.bId===sc.id))return{type:'floor',id:ST.fid};
+  if((P.rank||P.wide||(P.floorsQ&&!P.sheet))&&sc.type==='floor')return{type:'building',id:cb};
   return sc;}
+function scopeWhy(P,s0,s){if(P.level!=null)return`“${P.level==='top'?'top floor':'floor '+P.level}” is in the question`;if(P.bld)return`building ${P.bld} is named in the question`;if(P.project)return'the question asks about every building';
+  if(s.type!==s0.type||s.id!==s0.id)return P.sheet?'“this floor plan” means the floor you are looking at':P.rank?'comparing floors needs the whole building':P.wide?'the question asks about the whole building':'counting floors needs the building';
+  return'the scope you picked';}
 let QN=0,RV=0;const ANS={};
-function answer(q,scope0){
-  const t0=performance.now(),P=parseQ(q),A={n:++QN,q,P,scope:scope0,rv:++RV,per:[],missing:[]};
-  const done=()=>{A.ms=performance.now()-t0;return A;};
-  if(scope0&&scope0.type==='floor'&&FL[scope0.id]&&FL[scope0.id].deleted){A.kind='nope';A.text='That floor was deleted.';return done();}
-  if(!scope0||!scopeFloors(scope0).length){A.kind='nope';A.text='Add floor plans first, then ask about them.';return done();}
-  const sc=resolveScope(P,scope0);
-  if(!sc){A.kind='nope';A.text=`There is no ${P.level==='top'?'top floor':'floor '+P.level} in ${bName(P.bld||(scope0.type==='floor'?FL[scope0.id].bId:scope0.id||ST.bId))}.`;return done();}
-  A.scope=sc;
-  if(P.floorsQ){const bs=sc.type==='project'?PROJ.buildings:[bld(sc.type==='floor'?FL[sc.id].bId:sc.id)];A.kind='count';A.unit='';A.value=bs.reduce((a,b)=>a+b.floors.length,0);A.pill=['ok','From the floor list'];A.calc=`count(floor sheets) = ${A.value}`;return done();}
-  if(P.unsupported){A.kind='nope';A.text="I can't verify that from the drawings. I count doors, windows, toilets, sinks, showers, saunas and rooms, and work out areas, marking every item I use.";return done();}
-  const fls=scopeFloors(sc),missing=fls.filter(f=>!isRead(f));
+function answer(q,scope0,o={}){
+  const t0=performance.now(),P=parseQ(q),A={n:o.silent?0:++QN,q,P,scope:scope0,rv:++RV,per:[],missing:[],steps:[]};
+  const S=(k,d,x)=>{A.steps.push(Object.assign({k,d,s:'ok'},x||{}));};
+  const done=()=>{A.ms=performance.now()-t0;S('cost',`0 model calls, 0 tokens, ${fmtMs(A.ms)}.${A.kind!=='nope'?' The drawings were read once; every answer after that is plain code over what was read.':''}`,{ms:A.ms});return A;};
+  const nope=t=>{A.kind='nope';A.text=t;return done();};
+  S('parse_question',`${P.rule}${P.hit&&P.why!==P.hit?` · matched “${P.hit}”`:''}${P.lang!=='English'?` · ${P.lang}`:''}`,{ms:P.ms,s:P.unsupported?'warn':'ok'});
+  if(scope0&&scope0.type==='floor'&&FL[scope0.id]&&FL[scope0.id].deleted)return nope('That floor was deleted.');
+  if(!scope0||!scopeFloors(scope0).length)return nope('Add floor plans first, then ask about them.');
+  const sc=o.pin?scope0:resolveScope(P,scope0);
+  if(!sc)return nope(`There is no ${P.level==='top'?'top floor':'floor '+P.level} in ${bName(P.bld||(scope0.type==='floor'?FL[scope0.id].bId:scope0.id||ST.bId))}.`);
+  A.scope=sc;const fls=scopeFloors(sc),missing=fls.filter(f=>!isRead(f));
+  S('select_floors',`${scopeName(sc)} · ${scopeWhy(P,scope0,sc)}${fls.length>1?` · ${fls.length-missing.length} of ${fls.length} floors read`:''}`,{s:missing.length&&!P.floorsQ?'warn':'ok'});
+  if(P.floorsQ){
+    if(sc.type==='floor'){const f=FL[sc.id],n=f.schema&&f.schema.drawing.storeys||1;A.kind='count';A.unit='';A.value=n;A.per=[{fid:f.id,val:n,ev:[],x:{}}];A.pill=['ok',n>1?'Read from the drawing':'One storey on this sheet'];A.calc=`storeys drawn on this sheet = ${n}`;
+      S('count_storeys',n>1?`The reader saw ${n} storey plans drawn on this sheet.`:'One storey plan on this sheet (each floor card is one storey).');return done();}
+    const bs=sc.type==='project'?PROJ.buildings:[bld(sc.id)];A.kind='count';A.unit='';A.value=bs.reduce((a,b)=>a+b.floors.length,0);A.pill=['ok','From the floor list'];A.calc=`count(floor sheets) = ${A.value}`;
+    S('count_floors',bs.map(b=>`${b.name}: ${b.floors.length} floor sheet${b.floors.length===1?'':'s'}`).join(' · '));return done();}
+  if(P.unsupported)return nope("I can't verify that from the drawings. I count doors, windows, toilets, sinks, showers, saunas and rooms, and work out areas, marking every item I use.");
   A.per=fls.map(f=>isRead(f)?{fid:f.id,...evalSheet(f.schema,P)}:{fid:f.id,na:true});A.missing=missing.map(f=>f.id);
-  if(P.t.units&&A.per.every(p=>p.na||p.noUnits)&&A.per.some(p=>p.noUnits)){A.kind='nope';A.text="These drawings don't mark apartments, so I can't count them. Ask about rooms, doors or areas instead.";return done();}
+  const tn=toolName(P);A.per.forEach(p=>{const f=FL[p.fid],pre=fls.length>1?fname(f)+': ':'';
+    if(p.na)S(tn,pre+(f.status==='reading'||f.status==='queued'?'still being read':'not read yet'),{s:'warn'});else S(tn,pre+perDetail(P,f.schema,p),{s:p.val==null?'warn':'ok'});});
+  if(P.t.units&&A.per.every(p=>p.na||p.noUnits)&&A.per.some(p=>p.noUnits))return nope("These drawings don't mark apartments, so I can't count them. Ask about rooms, doors or areas instead.");
   const ok=A.per.filter(p=>!p.na&&p.val!=null);
-  if(!ok.length){A.kind='nope';A.text=missing.length?(fls.length===1?'This floor is not read yet.':'None of these floors are read yet.'):`There is no scale or printed area on ${fls.length>1?'these drawings':'this drawing'}, so I won't give an area you can't check.`;return done();}
+  if(!ok.length)return nope(missing.length===fls.length?(fls.length===1?'This floor is not read yet.':'None of these floors are read yet.'):A.per.some(p=>p.nf)?(P.kind==='roomNo'?`I can't find room ${P.no} on ${fls.length>1?'these floors':'this floor'}. Room numbers are matched exactly as printed.`:`No rooms are marked as apartment ${P.apt} on ${fls.length>1?'these floors':'this floor'}.`):`There is no scale or printed area on ${fls.length>1?'these drawings':'this drawing'}, so I won't give an area you can't check.`);
   const isA=P.kind!=='count';A.unit=isA?'m²':'';
-  if(P.rank&&fls.length>1){const sorted=[...ok].sort((a,b)=>P.least?a.val-b.val:b.val-a.val),top=sorted[0],f=FL[top.fid];
+  if(P.kind==='roomNo'){const best=ok[0],f=FL[best.fid],r=best.x.room;A.kind='area';A.value=best.val;A.top=best.fid;
+    A.text=`Room ${P.no}${r.label?' ('+r.label+')':''}${r.unit?' in '+r.unit:''}${fls.length>1?', on '+fname(f):''}.${best.x.byLabel?' Matched by its name; no room number was read.':''}${ok.length>1?` Also found on ${ok.slice(1).map(p=>fname(FL[p.fid])).join(', ')}.`:''}`;
+    A.per=A.per.map(p=>p.fid===best.fid?p:{...p,ev:[],dim:true});}
+  else if(P.rank&&fls.length>1){const sorted=[...ok].sort((a,b)=>P.least?a.val-b.val:b.val-a.val),top=sorted[0],f=FL[top.fid];
     A.kind='rank';A.value=top.val;A.top=top.fid;const where=(sc.type==='project'?bName(f.bId)+', ':'')+fname(f);
     A.text=`${where} has the ${P.least?'fewest':'most'} ${isA?'floor area':nounOf(P,2)}: ${isA?f1(top.val)+' m²':top.val}.`;
     const ties=sorted.filter(p=>p!==top&&p.val===top.val);if(ties.length)A.text+=` Tied with ${ties.map(p=>fname(FL[p.fid])).join(', ')}.`;}
@@ -808,13 +1034,18 @@ function answer(q,scope0){
     const r=best.x.room,what=P.kind==='unitArea'?`apartment ${best.x.unit}`:`the ${RT[r.type].en.toLowerCase()}${r.label&&r.label!==RT[r.type].fi?' "'+r.label+'"':''}${r.unit?' in '+r.unit:''}`;
     A.text=`The ${P.smallest?'smallest':'largest'} is ${what}${fls.length>1?`, on ${(sc.type==='project'?bName(f.bId)+', ':'')+fname(f)}`:''}.`;
     A.per=A.per.map(p=>p.fid===best.fid?p:{...p,ev:[],dim:true});}
-  else{A.kind=isA?'area':'count';A.value=ok.reduce((a,p)=>a+p.val,0);}
-  const T=P.t,filt=T.items?`kind = ${T.items.join(' or ')}`:T.units?`apartments${P.withSauna?' with a sauna':''}`:T.allRooms?'rooms (not corridors)':`type = ${T.rooms.join(' or ')}`;
-  if(isA){const np=ok.reduce((a,p)=>a+(p.x?p.x.np:0),0),nt=ok.reduce((a,p)=>a+(p.x?p.x.nt:0),0),est=ok.some(p=>FL[p.fid].schema.drawing.scale&&FL[p.fid].schema.drawing.scale.estimated);
-    A.pill=missing.length?['chk',`${missing.length} floor${missing.length>1?'s':''} not read`]:est&&nt?['chk','Scale estimated from doors']:!nt?['ok','From printed areas']:!np?['ok','Traced at drawing scale']:['ok',`${np} printed, ${nt} traced`];
+  else{A.kind=isA?'area':'count';A.value=ok.reduce((a,p)=>a+p.val,0);
+    if(P.kind==='aptArea')A.text=`Apartment ${P.apt}: ${ok.reduce((a,p)=>a+p.ev.length,0)} rooms, outdoor spaces left out.`;
+    else if(P.kind==='indoor')A.text=`${ok.reduce((a,p)=>a+p.ev.length,0)} numbered indoor rooms, outdoor spaces left out.`;}
+  if(ok.length>1){if(A.kind==='rank')S('compare_floors',`${P.least?'fewest':'most'}: ${fname(FL[A.top])} with ${isA?f1(A.value)+' m²':A.value}`);else if(A.kind==='extreme'||P.kind==='roomNo')S('compare_floors',`${P.kind==='roomNo'?'found':P.smallest?'smallest':'largest'} on ${fname(FL[A.top])}`);else S('sum_floors',`${ok.map(p=>isA?f1(p.val):p.val).join(' + ')} = ${isA?f1(A.value)+' m²':A.value}`);}
+  const T=P.t,filt=T.items?`kind = ${T.items.join(' or ')}`:T.units?`apartments${P.withSauna?' with a sauna':''}`:T.label?`label = “${T.label}”`:T.allRooms?'rooms (not corridors)':T.rooms?`type = ${T.rooms.join(' or ')}`:P.kind==='aptArea'?`apartment ${P.apt}, indoor rooms`:P.kind==='indoor'?'numbered indoor rooms':`room ${P.no}`;
+  const noScale=A.per.filter(p=>p.noScale).length;
+  if(isA){const np=ok.reduce((a,p)=>a+(p.x&&!p.dim?p.x.np:0),0),nt=ok.reduce((a,p)=>a+(p.x&&!p.dim?p.x.nt:0),0),est=ok.some(p=>{const d=FL[p.fid].schema.drawing;return d.scale&&d.scale.estimated;});
+    A.pill=missing.length?['chk',`${missing.length} floor${missing.length>1?'s':''} not read`]:noScale?['chk',`${noScale} floor${noScale>1?'s':''} without a scale`]:est&&nt?['chk','Scale estimated']:!nt?['ok','From printed areas']:!np?['ok','Traced at drawing scale']:['ok',`${np} printed, ${nt} traced`];
     A.calc=`Σ area(${filt})${ok.length>1?' over '+ok.length+' floors':''}\n= ${f1(A.value)} m²\n${np} area${np===1?'':'s'} printed on the drawing${nt?`, ${nt} from the traced outline × scale²`:''}`;}
   else{A.pill=missing.length?['chk',`${missing.length} floor${missing.length>1?'s':''} not read`]:['ok','Every item marked'];
     A.calc=A.kind==='rank'?`count(${filt}) on each floor\n= ${[...ok].reverse().map(p=>p.val).join(', ')} (top floor first)\n${P.least?'fewest':'most'} = ${A.value}`:`count(${filt})${ok.length>1?' on '+ok.length+' floors':''} = ${A.value}`;}
+  S('verify',verifyText(A,P,ok),{s:missing.length||noScale?'warn':'ok'});
   return done();
 }
 
@@ -830,7 +1061,7 @@ function thumbHTML(f){if(f.img)return`<img src="${f.img.url}" alt="">`;const c=c
 function subHTML(f){const sc=f.schema;
   if(f.status==='read'){const nd=sc.items.filter(i=>i.kind==='door').length;return`${sc.rooms.length} rooms · ${nd} door${nd===1?'':'s'}`;}
   if(f.status==='reading')return`<span class="rd">${f.live&&f.live.n?`Reading · ${f.live.rooms} rooms, ${f.live.doors} doors`:f.t0?`Claude is reading · ${Math.round((performance.now()-f.t0)/1000)} s`:'Reading…'}</span>`;
-  if(f.status==='queued')return'Waiting to read';
+  if(f.status==='queued')return'Waiting for a free reader';
   if(f.status==='error')return`<span class="er">Couldn't read · ${esc(f.errShort||'error')}</span>`;
   if(f.status==='nokey')return'<span class="wr">Needs Claude access</span>';
   return f.errShort==='stopped'?'Stopped':'Not read';}
@@ -861,6 +1092,7 @@ function selectFloor(fid,o={}){
   if(o.scroll!==false)document.querySelector(`.fc[data-f="${fid}"]`)?.scrollIntoView({block:'nearest'});
   if(ST.scopeMode==='auto')autoScope();renderScope();renderAskEmpty();
   if(ST.view==='plan')renderPlan();else{if(T3.iso)sync3D();paint3D();labels3D();if(!o.from3d)focusFloor3D(fid);}
+  trSoon();
 }
 function setBuilding(id){if(!bld(id))return;ST.bId=id;const b=curB();ST.fid=b.floors.length?b.floors[b.floors.length-1]:null;ST.sel=null;T3.framed=false;if(ST.scopeMode==='auto')autoScope();renderAll();}
 
@@ -928,12 +1160,12 @@ async function addFiles(files,o={}){
   else if(srcs.length>1&&!srcs.some(s=>s.canvas))srcs.sort((a,c)=>a.name.localeCompare(c.name,undefined,{numeric:true}));
   const made=[];
   for(const s of srcs){let P;try{P=s.canvas?await prepDrawable(s.canvas,s.canvas.width,s.canvas.height,s.name):await prepFile(s.file);}catch(e){bad.push(s.name);continue;}
-    const k=base(s.name),j=js[k];if(j)delete js[k];made.push(makeFloor(b.id,{src:'upload',file:s.name,img:P,schemaJson:j||null}));}
+    const k=base(s.name),j=js[k];if(j)delete js[k];made.push(makeFloor(b.id,{src:'upload',file:s.name,img:P,schemaJson:j||null,meta:{name:s.file?s.file.name:s.name,bytes:s.file?s.file.size:null,page:s.page||null,pages:s.pages||null}}));}
   Object.keys(js).forEach(k=>made.push(makeFloor(b.id,{src:'json',file:k+'.json',schemaJson:js[k]})));
   if(!made.length){toast(bad.length?`Could not add ${bad.join(', ')}.`:'Add PNG, JPG, SVG or PDF floor plans.');return;}
   at=clamp(at,0,b.floors.length);b.floors.splice(at,0,...made.map(f=>f.id));
   ST.bId=b.id;ST.fid=made[made.length-1].id;if(b.floors.length===made.length)T3.framed=false;
-  if(ST.scopeMode==='auto')autoScope();renderAll();made.forEach(queueRead);
+  if(ST.scopeMode==='auto')autoScope();renderAll();made.forEach(queueRead);if(ST.trOpen)setTrace(null,'reading');
   toast(`Added ${made.length} floor${made.length>1?'s':''}.${made.length>1?' Drag them if the order is wrong.':''}${bad.length?` Skipped: ${bad.join(', ')}.`:''}`);
 }
 function loadSample(){let b=curB();if(b.floors.length)b=newBuilding('Sample building');else if(b.name===`Building ${b.id}`)b.name='Sample building';
@@ -968,7 +1200,7 @@ function drawEvidence(){const f=FL[ST.fid],sc=f&&f.schema,p=sc&&activeN(f.id);if
 function renderFlab(){const f=FL[ST.fid];if(!f||f.deleted){$('#flab').innerHTML='';return;}const b=bld(f.bId),i=b.floors.indexOf(f.id),sc=f.schema;
   const meta=f.status==='read'?`Read by ${esc(f.readBy)}${sc.drawing.scale&&sc.drawing.scale.method!=='none'?` · scale from ${esc(sc.drawing.scale.method)}`:' · no scale found'}`:esc(f.file);
   $('#flab').innerHTML=`<button class="nb" data-act="fldn" title="Floor below (↓)" aria-label="Floor below" ${i<=0?'disabled':''}>${I.down}</button><div class="ft"><b>${esc(b.name)} · ${esc(fname(f))}</b><span>${meta}</span></div><button class="nb" data-act="flup" title="Floor above (↑)" aria-label="Floor above" ${i>=b.floors.length-1?'disabled':''}>${I.up}</button>`;}
-function renderVnav(){$('#vnav').innerHTML=`<button class="nb" data-act="zi" title="Zoom in" aria-label="Zoom in">${I.plus}</button><button class="nb" data-act="zo" title="Zoom out" aria-label="Zoom out">${I.minus}</button><button class="nb" data-act="fit" title="Frame the drawing (F)" aria-label="Frame">${I.fit}</button><button class="nb ${ST.trace?'on':''}" data-act="trace" title="Show what Blueline read (T)" aria-label="Show what Blueline read" aria-pressed="${ST.trace}">${I.layers}</button>`;}
+function renderVnav(){$('#vnav').innerHTML=`<button class="nb" data-act="zi" title="Zoom in" aria-label="Zoom in">${I.plus}</button><button class="nb" data-act="zo" title="Zoom out" aria-label="Zoom out">${I.minus}</button><button class="nb" data-act="fit" title="Frame the drawing (F)" aria-label="Frame">${I.fit}</button><button class="nb ${ST.trace?'on':''}" data-act="trace" title="Show what Blueline read (R)" aria-label="Show what Blueline read" aria-pressed="${ST.trace}">${I.layers}</button>`;}
 function renderLegend(){const f=FL[ST.fid],el=$('#legend');if(!f||!f.schema){el.hidden=true;return;}const p=activeN(f.id),A=ST.active;let h='';
   if(p){const tot=A.kind==='count'||A.kind==='area'?A.value:null,isA=A.unit==='m²';h=`<span class="cn"><b>${isA?f1(p.val):p.val}</b>${isA?'m²':esc(nounOf(A.P,p.val))} on this floor${tot!=null&&A.per.length>1?` · ${isA?f1(tot)+' m²':tot} in total`:''}</span><button data-act="clearans">Clear</button>`;}
   else if(ST.trace)h=`<span><i class="lr"></i>Rooms</span><span><i class="li"></i>Doors, windows, fixtures</span><span style="color:var(--fnt)">what Blueline read</span>`;
@@ -976,7 +1208,7 @@ function renderLegend(){const f=FL[ST.fid],el=$('#legend');if(!f||!f.schema){el.
   el.innerHTML=h;el.hidden=false;}
 function renderReadBan(){const f=FL[ST.fid],el=$('#rdban');if(!f){el.hidden=true;return;}let h='',warn=false;
   if(f.status==='reading')h=`<span class="spin"></span><span>${f.t0?'Claude is reading this floor. Rooms, doors and windows appear as they are found.':'Reading the sample drawing…'}</span>${f.ctl?`<button class="btn sm" data-act="stop" data-f="${f.id}">Stop</button>`:''}`;
-  else if(f.status==='queued')h=`<span class="spin"></span><span>Waiting for the floor before it to finish.</span>`;
+  else if(f.status==='queued')h=`<span class="spin"></span><span>Waiting for a free reader. Up to ${poolSize()} floors are read at the same time.</span>`;
   else if(f.status==='nokey'){warn=true;h=SAMPLER&&!CLAUDE_OFF?`<span>${esc(f.err)}</span><button class="btn sm pri" data-act="reread" data-f="${f.id}">Try again</button>`:`<span>${esc(f.err)}</span><input class="kin" id="keyin" type="password" placeholder="Anthropic API key" autocomplete="off" spellcheck="false" aria-label="Anthropic API key"><button class="btn sm pri" data-act="savekey">Read</button>`;}
   else if(f.status==='error'||f.status==='idle'){warn=f.status==='error';h=`<span>${esc(f.err||'Not read yet.')}</span><button class="btn sm pri" data-act="reread" data-f="${f.id}">${f.status==='idle'?'Read':'Try again'}</button>`;}
   el.hidden=!h;el.classList.toggle('warn',warn);el.innerHTML=h;}
@@ -1030,6 +1262,8 @@ function init3D(OrbitControls){const THREE=T3.THREE,c=$('#c3');
     gPin:new THREE.CylinderGeometry(.09,.09,1.3,8),gHead:new THREE.SphereGeometry(.24,14,10),mPin:new THREE.MeshBasicMaterial({color:0x5B95FF}),
     mRoom:new THREE.MeshBasicMaterial({color:0x5B95FF,transparent:true,opacity:.42,depthWrite:false,side:THREE.DoubleSide}),gBox:new THREE.BoxGeometry(1,1,1)});
   T3.shared=new Set([T3.gPin,T3.gHead,T3.mPin,T3.mRoom,T3.gBox]);
+  T3.mGlass=new THREE.MeshLambertMaterial({color:0x8DB6FF,transparent:true,opacity:.38,depthWrite:false});T3.mFix=new THREE.MeshLambertMaterial({color:0xE6E6E6});T3.mDoor=new THREE.MeshLambertMaterial({color:0x8A6A4A});T3.mRT={};
+  [T3.mGlass,T3.mFix,T3.mDoor].forEach(m=>T3.shared.add(m));
   let down=null;
   c.addEventListener('pointerdown',e=>{down=[e.clientX,e.clientY];T3.camAnim=null;});
   c.addEventListener('pointerup',e=>{const d=down;down=null;if(!d||Math.abs(e.clientX-d[0])+Math.abs(e.clientY-d[1])>5)return;const fid=pick3D(e);if(fid)selectFloor(fid,{from3d:1});});
@@ -1042,34 +1276,57 @@ function pick3D(e){const r=$('#c3').getBoundingClientRect();T3.ndc.set((e.client
   const objs=[...T3.G.values()].filter(G=>G.g.visible).map(G=>G.pick),hit=T3.ray.intersectObjects(objs,false)[0];return hit?hit.object.userData.fid:null;}
 function mppOf(f){const m=f.schema&&f.schema.drawing.metersPerPixel;if(m)return m;if(f.sample)return 1/PPM;
   const ms=bld(f.bId).floors.map(id=>FL[id].schema&&FL[id].schema.drawing.metersPerPixel).filter(Boolean).sort((a,b)=>a-b);if(ms.length)return ms[ms.length>>1];const[W,H]=dims(f);return 24/Math.max(W,H);}
-function maskRects(P){const{W,H,thick}=P;
-  for(const cs of[2,3,4,6]){const GW=Math.ceil(W/cs),GH=Math.ceil(H/cs),g=new Uint8Array(GW*GH);
-    for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(thick[y*W+x])g[((y/cs)|0)*GW+((x/cs)|0)]=1;
-    const out=[];let open=new Map();
-    for(let y=0;y<=GH;y++){const next=new Map();if(y<GH){let x=0;while(x<GW){if(g[y*GW+x]){const s0=x;while(x<GW&&g[y*GW+x])x++;const k=s0+','+x,r=open.get(k);if(r){r[3]=y+1;open.delete(k);next.set(k,r);}else next.set(k,[s0,y,x,y+1]);}else x++;}}
-      open.forEach(r=>out.push(r));open=next;}
-    if(out.length<=6000)return out.map(r=>[r[0]*cs,r[1]*cs,r[2]*cs,r[3]*cs]);}
-  return[];}
-function rectsNearRooms(rects,rooms,tol){if(!rooms.length)return[];let a=1e9,b=1e9,c=-1e9,d=-1e9;rooms.forEach(r=>r.polygon.forEach(p=>{a=Math.min(a,p[0]);b=Math.min(b,p[1]);c=Math.max(c,p[0]);d=Math.max(d,p[1]);}));
-  return rects.filter(r=>{const cx=(r[0]+r[2])/2,cy=(r[1]+r[3])/2;if(cx<a-tol*2||cx>c+tol*2||cy<b-tol*2||cy>d+tol*2)return false;return rooms.some(rm=>edgeD([cx,cy],rm.polygon)<=tol+Math.min(r[2]-r[0],r[3]-r[1])/2);});}
-function addLine(m,c,a,b){const k=Math.round(c*2)/2;if(!m.has(k))m.set(k,{c,iv:[]});m.get(k).iv.push([Math.min(a,b),Math.max(a,b)]);}
-function lineRuns(HL,VL,mpp,ox,oz,ops,extOf){const out=[];const push=(h,c,a,b,y0,y1,th)=>{if(b-a<.5)return;const L=(b-a)*mpp;out.push(h?{x:(a+b)/2*mpp-ox,z:c*mpp-oz,w:L,d:th,y0,y1}:{x:c*mpp-ox,z:(a+b)/2*mpp-oz,w:th,d:L,y0,y1});};
-  for(const[m,h]of[[HL,1],[VL,0]])for(const{c,iv}of m.values()){iv.sort((p,q)=>p[0]-q[0]);const mg=[];for(const v of iv){const l=mg[mg.length-1];if(l&&v[0]<=l[1]+.5)l[1]=Math.max(l[1],v[1]);else mg.push([...v]);}
-    const th=extOf(h,c)?.25:.12,pad=th/2/mpp,mine=ops.filter(o=>o.h===h&&Math.abs(o.c-c)<1).sort((p,q)=>p.a-q.a);
-    for(const[s0,e0]of mg){let cur=s0-pad;for(const o of mine){if(o.b<=s0||o.a>=e0)continue;push(h,c,cur,o.a,0,WH,th);if(o.door)push(h,c,o.a,o.b,2.1,WH,th);else{push(h,c,o.a,o.b,0,.9,th);push(h,c,o.a,o.b,2.1,WH,th);}cur=o.b;}push(h,c,cur,e0+pad,0,WH,th);}}
+/* ---------- 3D from the schema alone. Rooms are filled on a fine grid, the band around them
+   becomes wall, and every door or window cuts an opening. Works the same whether the schema
+   came from Claude, the team model, or a schematic file; doors and windows may be boxes or points. ---------- */
+const RTC={Living:0x56663F,Dining:0x56663F,Lobby:0x56663F,Bedroom:0x5E4E78,Kitchen:0x7A6440,Bathroom:0x2F5F86,WC:0x2F5F86,Wash:0x2F5F86,Sauna:0x7A4E3A,Hall:0x4C4C4C,Corridor:0x4C4C4C,Stair:0x4C4C4C,Lift:0x4C4C4C,Closet:0x5A5448,Storage:0x5A5448,Utility:0x4F5A5A,Technical:0x5A5448,Bike:0x5A5448,Balcony:0x3E6660,Office:0x415A73,Meeting:0x415A73,OpenOffice:0x415A73,Room:0x505050};
+const FXS={toilet:[.4,.7,.42],sink:[.6,.45,.86],kitchen_sink:[.8,.6,.9],shower:[.9,.9,.06],bathtub:[1.7,.75,.56],sauna_stove:[.45,.45,.8],other:[.6,.6,.6]}; // along wall, from wall, height (m)
+const rtMat=t=>{if(!T3.mRT[t]){const m=new T3.THREE.MeshBasicMaterial({color:RTC[t]||RTC.Room,transparent:true,opacity:.62,depthWrite:false});T3.mRT[t]=m;T3.shared.add(m);}return T3.mRT[t];};
+function gridRects(m,GW,GH){const out=[];let open=new Map();
+  for(let y=0;y<=GH;y++){const next=new Map();if(y<GH){const o=y*GW;let x=0;while(x<GW){if(m[o+x]){const s0=x;while(x<GW&&m[o+x])x++;const k=s0*65536+x,r=open.get(k);if(r){r[3]=y+1;open.delete(k);next.set(k,r);}else next.set(k,[s0,y,x,y+1]);}else x++;}}
+    open.forEach(r=>out.push(r));open=next;}
   return out;}
-function wallBoxes(f,mpp,ox,oz){const sc=f.schema;if(!sc)return[];
-  if(sc._t){const t=sc._t,HL=new Map(),VL=new Map(),ops=[];
-    sc.rooms.forEach(r=>{const xs=r.polygon.map(p=>p[0]),ys=r.polygon.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);addLine(HL,y0,x0,x1);addLine(HL,y1,x0,x1);addLine(VL,x0,y0,y1);addLine(VL,x1,y0,y1);});
-    sc.items.forEach(it=>{const g=it._g;if(!g||(it.kind!=='door'&&it.kind!=='window'))return;const w=g.w;ops.push(g.or==='h'?{h:1,c:Y(g.y),a:X(g.x-w/2),b:X(g.x+w/2),door:it.kind==='door'}:{h:0,c:X(g.x),a:Y(g.y-w/2),b:Y(g.y+w/2),door:it.kind==='door'});});
-    return lineRuns(HL,VL,mpp,ox,oz,ops,(h,c)=>h?(Math.abs(c-Y(0))<1||Math.abs(c-Y(t.D))<1):(Math.abs(c-X(0))<1||Math.abs(c-X(t.W))<1));}
-  if(f.img&&f.img.thick&&sc.rooms.length){if(!f._rects||f._rmpp!==mpp){f._rects=rectsNearRooms(maskRects(f.img),sc.rooms,.45/mpp);f._rmpp=mpp;}
-    if(f._rects.length)return f._rects.map(r=>({x:(r[0]+r[2])/2*mpp-ox,z:(r[1]+r[3])/2*mpp-oz,w:Math.max(.05,(r[2]-r[0])*mpp),d:Math.max(.05,(r[3]-r[1])*mpp),y0:0,y1:WH}));}
-  const HL=new Map(),VL=new Map(),diag=[];
-  sc.rooms.forEach(r=>{const p=r.polygon;for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length],dx=b[0]-a[0],dy=b[1]-a[1];
-    if(Math.abs(dy)<=Math.abs(dx)*.08)addLine(HL,(a[1]+b[1])/2,a[0],b[0]);else if(Math.abs(dx)<=Math.abs(dy)*.08)addLine(VL,(a[0]+b[0])/2,a[1],b[1]);
-    else diag.push({x:(a[0]+b[0])/2*mpp-ox,z:(a[1]+b[1])/2*mpp-oz,w:Math.hypot(dx,dy)*mpp,d:.14,y0:0,y1:WH,rot:-Math.atan2(dy,dx)});}});
-  return lineRuns(HL,VL,mpp,ox,oz,[],()=>false).concat(diag);}
+function wallModel(f,mpp){const sc=f.schema;if(!sc||!sc.rooms.length)return null;
+  const c=cropOf(f),cw=c[2]-c[0],ch=c[3]-c[1];let cs=Math.max(.04/mpp,.35);while((cw/cs)*(ch/cs)>1.6e6)cs*=1.25;
+  const GW=Math.ceil(cw/cs)+5,GH=Math.ceil(ch/cs)+5,N=GW*GH,cell=cs*mpp,gx=x=>(x-c[0])/cs+2,gy=y=>(y-c[1])/cs+2;
+  const cv=document.createElement('canvas');cv.width=GW;cv.height=GH;const g=cv.getContext('2d',{willReadFrequently:true});
+  const path=r=>{g.beginPath();r.polygon.forEach((p,i)=>i?g.lineTo(gx(p[0]),gy(p[1])):g.moveTo(gx(p[0]),gy(p[1])));g.closePath();};
+  const mask=(rs,stroke)=>{g.fillStyle='#000';g.fillRect(0,0,GW,GH);g.fillStyle='#fff';rs.forEach(r=>{path(r);g.fill();});
+    if(stroke){g.strokeStyle='#000';g.lineWidth=Math.max(1,.12/cell);rs.forEach(r=>{path(r);g.stroke();});} // touching rooms get a wall between them
+    const d=g.getImageData(0,0,GW,GH).data,m=new Uint8Array(N);for(let i=0;i<N;i++)m[i]=d[i*4]>127?1:0;return m;};
+  const all=mask(sc.rooms,true),outs=sc.rooms.filter(isOutdoor),od=outs.length?mask(outs,false):null,ind=new Uint8Array(N);
+  for(let i=0;i<N;i++)ind[i]=all[i]&&!(od&&od[i])?1:0;
+  const K=2*Math.max(1,Math.round(.2/cell))+1,nIn=morph(ind,GW,GH,K,0),nOut=od?morph(od,GW,GH,K,0):null;
+  const wall=new Uint8Array(N),rail=new Uint8Array(N),lint=new Uint8Array(N),sill=new Uint8Array(N);
+  for(let i=0;i<N;i++){if(all[i])continue;if(nIn[i])wall[i]=1;else if(nOut&&nOut[i])rail[i]=1;} // balconies get a railing, not a wall
+  const isW=(x,y)=>x>=0&&y>=0&&x<GW&&y<GH&&wall[y*GW+x]===1,P=Math.max(2,.32/cell),Q=Math.max(3,.45/cell);
+  const dens=(o,v,a,b)=>{let n=0,m=0;for(let u=Math.round(a);u<=Math.round(b);u++)for(let w=Math.round(v-P);w<=Math.round(v+P);w++){m++;if(o==='h'?isW(u,w):isW(w,u))n++;}return m?n/m:0;};
+  const cutLine=(o,v,a,b,dst)=>{let n=0;for(let u=Math.ceil(a);u<=Math.floor(b);u++){let s0=null;
+      for(let d=0;d<=P&&s0==null;d++){const w1=Math.round(v+d),w2=Math.round(v-d);if(o==='h'?isW(u,w1):isW(w1,u))s0=w1;else if(o==='h'?isW(u,w2):isW(w2,u))s0=w2;}
+      if(s0==null)continue;for(const dir of[-1,1])for(let w=dir<0?s0:s0+1;Math.abs(w-v)<=Q&&(o==='h'?isW(u,w):isW(w,u));w+=dir){const i=o==='h'?w*GW+u:u*GW+w;wall[i]=0;dst[i]=1;n++;}}
+    return n;};
+  const nearestWall=(cx,cy,Rm)=>{const X0=gx(cx),Y0=gy(cy),R=Math.ceil(Rm/cell);let best=null,bd=1e18;
+    for(let y=Math.max(0,Math.floor(Y0-R));y<=Math.min(GH-1,Math.ceil(Y0+R));y++)for(let x=Math.max(0,Math.floor(X0-R));x<=Math.min(GW-1,Math.ceil(X0+R));x++){if(wall[y*GW+x]!==1)continue;const dd=(x-X0)**2+(y-Y0)**2;if(dd<bd){bd=dd;best=[x,y];}}
+    if(!best)return null;const run=(dx,dy)=>{let n=0;for(let k=1;k<400&&isW(best[0]+dx*k,best[1]+dy*k);k++)n++;return n;};
+    return{x:best[0],y:best[1],o:run(1,0)+run(-1,0)>=run(0,1)+run(0,-1)?'h':'v',X0,Y0};};
+  const roomAt=p=>{for(const r of sc.rooms)if(inPoly(p,r.polygon))return r.id;return null;};
+  const m1=.45/mpp,m2=.25/mpp,miss=[];let nd=0,nw=0;
+  sc.items.forEach(it=>{if((it.kind!=='door'&&it.kind!=='window')||!it.box)return;const[x0,y0,x1,y1]=it.box,dst=it.kind==='door'?lint:sill,hit=()=>{if(it.kind==='door')nd++;else nw++;};
+    if(it.pt||Math.max(x1-x0,y1-y0)*mpp<.35){ // a point: open a standard width in the nearest wall
+      const cx=it.pt?it.pt[0]:(x0+x1)/2,cy=it.pt?it.pt[1]:(y0+y1)/2,nw2=nearestWall(cx,cy,.6);if(!nw2){miss.push(it.id);return;}
+      const half=(it.kind==='door'?.9:1.2)/cell/2,k=nw2.o==='h'?cutLine('h',nw2.y,nw2.X0-half,nw2.X0+half,dst):cutLine('v',nw2.x,nw2.Y0-half,nw2.Y0+half,dst);if(k)hit();else miss.push(it.id);return;}
+    const cand=it.kind==='door'?[['h',y0,x0,x1,-1],['h',y1,x0,x1,1],['v',x0,y0,y1,-1],['v',x1,y0,y1,1]]:[['h',(y0+y1)/2,x0,x1,0],['v',(x0+x1)/2,y0,y1,0]];let best=null;
+    for(const[o,v,a,b,n]of cand){if(b-a<2)continue;const gv=o==='h'?gy(v):gx(v),ga=o==='h'?gx(a):gy(a),gb=o==='h'?gx(b):gy(b),ins=(gb-ga)*.08,d=dens(o,gv,ga+ins,gb-ins);let sc2=d;
+      if(n){const mid=(a+b)/2,ri=roomAt(o==='h'?[mid,v-n*m2]:[v-n*m2,mid]),ro=roomAt(o==='h'?[mid,v+n*m1]:[v+n*m1,mid]),ids=it.roomIds||[]; // the door's two rooms should sit on either side of its wall
+        sc2+=.35*(ids.length>=2?((ri===ids[0]&&ro===ids[1])||(ri===ids[1]&&ro===ids[0])?1:0):ids.length===1?((ri===ids[0])!==(ro===ids[0])&&(ri===null||ro===null)?1:0):0);}
+      else sc2+=((o==='h')===(x1-x0>=y1-y0))?.04:0;
+      if(!best||sc2>best.s)best={o,gv,ga,gb,s:sc2,d};}
+    if(!best||best.d<.05){miss.push(it.id);return;}
+    const ins=(best.gb-best.ga)*.04;if(cutLine(best.o,best.gv,best.ga+ins,best.gb-ins,dst))hit();else miss.push(it.id);});
+  const fix=[];sc.items.forEach(it=>{if(it.kind==='door'||it.kind==='window'||!it.box)return;const b=it.box,S=FXS[it.kind]||FXS.other,cx=it.pt?it.pt[0]:(b[0]+b[2])/2,cy=it.pt?it.pt[1]:(b[1]+b[3])/2;
+    let w=(b[2]-b[0])*mpp,d=(b[3]-b[1])*mpp;if(it.pt||Math.max(w,d)<.25){const nw2=nearestWall(cx,cy,1);[w,d]=nw2&&nw2.o==='v'?[S[1],S[0]]:[S[0],S[1]];}
+    fix.push({x:cx,y:cy,w:clamp(w,.2,2.4),d:clamp(d,.2,2.4),h:S[2]});});
+  return{GW,GH,cs,cell,wall,rail,lint,sill,nd,nw,miss,fix};}
 function invertDark(g,w,h){const im=g.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){const l=(d[i]*299+d[i+1]*587+d[i+2]*114)/255000,v=42+176*(1-l);d[i]=v;d[i+1]=v;d[i+2]=v+3;}g.putImageData(im,0,0);}
 async function texCanvas(f,c){const cw=c[2]-c[0],ch=c[3]-c[1],k=Math.min(2,1024/Math.max(cw,ch)),TW=Math.max(2,Math.round(cw*k)),TH=Math.max(2,Math.round(ch*k));
   const cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const g=cv.getContext('2d',{willReadFrequently:true});
@@ -1077,25 +1334,39 @@ async function texCanvas(f,c){const cw=c[2]-c[0],ch=c[3]-c[1],k=Math.min(2,1024/
 function disposeObj(o){o.traverse(x=>{if(x.geometry&&!T3.shared.has(x.geometry))x.geometry.dispose();const ms=Array.isArray(x.material)?x.material:x.material?[x.material]:[];ms.forEach(m=>{if(T3.shared.has(m))return;if(m.map)m.map.dispose();m.dispose();});});}
 function build3DFloor(f){const THREE=T3.THREE,mpp=mppOf(f),key=f.v+':'+mpp.toFixed(6);let G=T3.G.get(f.id);if(G&&G.key===key)return G;
   const prev=G;if(prev){T3.root.remove(prev.g);disposeObj(prev.g);}
-  const g=new THREE.Group();T3.root.add(g);const c=cropOf(f),ox=(c[0]+c[2])/2*mpp,oz=(c[1]+c[3])/2*mpp,w=(c[2]-c[0])*mpp,d=(c[3]-c[1])*mpp;
+  const g=new THREE.Group();T3.root.add(g);const c=cropOf(f),ox=(c[0]+c[2])/2*mpp,oz=(c[1]+c[3])/2*mpp,w=(c[2]-c[0])*mpp,d=(c[3]-c[1])*mpp,sc=f.schema,tb=performance.now(),m=v=>v*mpp;
   const mW=new THREE.MeshLambertMaterial({color:0xC4C4C4}),mE=new THREE.LineBasicMaterial({color:0x5B95FF,transparent:true,opacity:.5}),mP=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.95});
   const slab=new THREE.Mesh(new THREE.BoxGeometry(w+.5,.18,d+.5),new THREE.MeshLambertMaterial({color:0x3B3B3B}));slab.position.y=-.1;g.add(slab);
   const plate=new THREE.Mesh(new THREE.PlaneGeometry(w,d),mP);plate.rotation.x=-Math.PI/2;plate.position.y=.004;g.add(plate);
-  const boxes=wallBoxes(f,mpp,ox,oz),wg=new THREE.Group();g.add(wg);
-  if(boxes.length){const im=new THREE.InstancedMesh(T3.gBox,mW,boxes.length),M=new THREE.Matrix4(),q=new THREE.Quaternion(),p=new THREE.Vector3(),s=new THREE.Vector3(),ax=new THREE.Vector3(0,1,0),seg=[];
-    boxes.forEach((b,i)=>{p.set(b.x,(b.y0+b.y1)/2,b.z);s.set(b.w,b.y1-b.y0,b.d);q.setFromAxisAngle(ax,b.rot||0);M.compose(p,q,s);im.setMatrixAt(i,M);
-      if(!b.rot&&b.y1>=WH-.01){const x0=b.x-b.w/2,x1=b.x+b.w/2,z0=b.z-b.d/2,z1=b.z+b.d/2,y=b.y1;seg.push(x0,y,z0,x1,y,z0,x1,y,z0,x1,y,z1,x1,y,z1,x0,y,z1,x0,y,z1,x0,y,z0);}});
-    im.instanceMatrix.needsUpdate=true;wg.add(im);const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(seg,3));wg.add(new THREE.LineSegments(lg,mE));}
+  const wg=new THREE.Group();g.add(wg);let note='';
+  const B=(list,mat)=>{if(!list.length)return 0;const im=new THREE.InstancedMesh(T3.gBox,mat,list.length),M=new THREE.Matrix4(),q=new THREE.Quaternion(),p=new THREE.Vector3(),s=new THREE.Vector3(),ax=new THREE.Vector3(0,1,0);
+    list.forEach((b,i)=>{p.set(b.x,(b.y0+b.y1)/2,b.z);s.set(Math.max(.02,b.w),Math.max(.02,b.y1-b.y0),Math.max(.02,b.d));q.setFromAxisAngle(ax,b.rot||0);M.compose(p,q,s);im.setMatrixAt(i,M);});
+    im.instanceMatrix.needsUpdate=true;wg.add(im);return list.length;};
+  if(sc&&sc._scene3d){const L={wall:[],door:[],window:[],fix:[]};
+    for(const e of sc._scene3d.elements||[]){if(!e.box||!e.box.c||!e.box.s)continue;const b=e.box;(L[e.kind]||L.fix).push({x:b.c[0]-ox,z:b.c[2]-oz,w:b.s[0],d:b.s[2],y0:b.c[1]-b.s[1]/2,y1:b.c[1]+b.s[1]/2,rot:b.yaw||0});}
+    B(L.wall,mW);B(L.door,T3.mDoor);B(L.window,T3.mGlass);B(L.fix,T3.mFix);
+    note=`The team model's own 3D scene, drawn as delivered: ${L.wall.length} wall pieces, ${L.door.length} doors, ${L.window.length} windows, ${L.fix.length} fixtures.`;}
+  else if(sc&&sc.rooms.length){const W=wallModel(f,mpp);
+    if(W){const cs=W.cs,toB=(r,y0,y1,thin)=>{const o={x:m(((r[0]+r[2])/2-2)*cs+c[0])-ox,z:m(((r[1]+r[3])/2-2)*cs+c[1])-oz,w:m((r[2]-r[0])*cs),d:m((r[3]-r[1])*cs),y0,y1};if(thin){if(o.w<o.d)o.w*=.3;else o.d*=.3;}return o;};
+      const R=(mk,y0,y1)=>gridRects(mk,W.GW,W.GH).map(r=>toB(r,y0,y1)),sl=gridRects(W.sill,W.GW,W.GH);
+      const n=B(R(W.wall,0,WH),mW)+B(sl.map(r=>toB(r,0,.9)).concat(sl.map(r=>toB(r,2.1,WH))),mW)+B(R(W.lint,2.1,WH),mW)+B(R(W.rail,0,1.05),mW);
+      B(sl.map(r=>toB(r,.9,2.1,true)),T3.mGlass);B(W.fix.map(q=>({x:m(q.x)-ox,z:m(q.y)-oz,w:q.w,d:q.d,y0:0,y1:q.h})),T3.mFix);
+      note=`Built from the schema alone on a ${Math.round(W.cell*100)} cm grid: ${n} wall pieces, ${W.nd} door and ${W.nw} window openings, ${W.fix.length} fixtures${W.miss.length?` · ${W.miss.length} opening${W.miss.length>1?'s':''} not on a wall (${W.miss.slice(0,4).join(', ')}${W.miss.length>4?'…':''})`:''}.`;}}
+  if(sc&&sc.rooms.length){const seg=[];sc.rooms.forEach(r=>{const p=r.polygon;if(!sc._scene3d)for(let i=0;i<p.length;i++){const a=p[i],b=p[(i+1)%p.length];seg.push(m(a[0])-ox,WH+.01,m(a[1])-oz,m(b[0])-ox,WH+.01,m(b[1])-oz);}
+      const fl=new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape(p.map(q=>new THREE.Vector2(m(q[0])-ox,-(m(q[1])-oz))))),rtMat(r.type));fl.rotation.x=-Math.PI/2;fl.position.y=.012;g.add(fl);});
+    if(seg.length){const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(seg,3));wg.add(new THREE.LineSegments(lg,mE));}}
   const pick=new THREE.Mesh(new THREE.BoxGeometry(w,FH*.92,d),new THREE.MeshBasicMaterial({visible:false}));pick.position.y=FH*.42;pick.userData.fid=f.id;g.add(pick);
   const pins=new THREE.Group();g.add(pins);
-  G={g,wg,pick,pins,mW,mE,mP,w,d,mpp,ox,oz,key,y:prev?prev.y:null,ty:prev?prev.ty:0,rise:f.justRead&&boxes.length?0:1,pinKey:null};
+  G={g,wg,pick,pins,mW,mE,mP,w,d,mpp,ox,oz,key,y:prev?prev.y:null,ty:prev?prev.ty:0,rise:f.justRead&&wg.children.length?0:1,pinKey:null,
+    rl:sc?sc.rooms.map(r=>{const q=centroid(r.polygon),a=roomArea(sc,r);return{x:m(q[0])-ox,z:m(q[1])-oz,t:r.label||RT[r.type].fi,a:a!=null?f1(a):''};}):[]};
   if(G.y!=null)g.position.y=G.y;if(G.rise<1)wg.scale.y=.01;f.justRead=false;T3.G.set(f.id,G);
+  if(note&&!f.deleted){const st=f.steps.find(x=>x.k==='build_3d');if(!st||st.d!==note)rstep(f,'build_3d','ok',note,{ms:performance.now()-tb});}
   texCanvas(f,c).then(cv=>{if(T3.G.get(f.id)!==G)return;const t=new THREE.CanvasTexture(cv);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=Math.min(8,T3.R.capabilities.getMaxAnisotropy());mP.map=t;mP.needsUpdate=true;}).catch(()=>{});
   return G;}
 function sync3D(){if(!T3.ok)return;const b=curB(),ids=new Set(b.floors);
   for(const[fid,G]of T3.G)if(!ids.has(fid)){T3.root.remove(G.g);disposeObj(G.g);T3.G.delete(fid);}
   b.floors.forEach((fid,i)=>{const G=build3DFloor(FL[fid]);G.ty=i*FH*(1+T3.spread*2);if(G.y==null){G.y=G.ty;G.g.position.y=G.y;}G.g.visible=!T3.iso||fid===ST.fid;});
-  pins3D();paint3D();labels3D(true);if(T3.on&&!T3.framed&&b.floors.length){frame3D(false);T3.framed=true;}
+  pins3D();paint3D();labels3D(true);roomLabels3D();if(T3.on&&!T3.framed&&b.floors.length){frame3D(false);T3.framed=true;}
   $('#hint3').innerHTML=b.floors.length?'Drag to orbit · right-drag to pan · scroll to zoom · <b>click</b> a floor to pick it · <b>double-click</b> to open its plan':'';}
 function paint3D(){if(!T3.ok)return;for(const[fid,G]of T3.G){const sel=fid===ST.fid,hov=fid===T3.hover||fid===T3.hoverList;
   G.mW.color.setHex(sel?0xF4F7FF:hov?0xD8E4FA:0xB8B8B8);G.mE.opacity=sel?.95:hov?.85:.28;G.mE.color.setHex(sel||hov?0x8DB6FF:0x5B95FF);G.mP.opacity=sel?1:.82;}}
@@ -1112,9 +1383,14 @@ function labels3D(rebuild){if(!T3.ok)return;const box=$('#lbl3'),b=curB();
   if(rebuild||box.children.length!==b.floors.length)box.innerHTML=b.floors.map(fid=>`<button class="l3" data-act="sel3" data-f="${fid}"></button>`).join('');
   b.floors.forEach(fid=>{const el=box.querySelector(`[data-f="${fid}"]`);if(!el)return;const f=FL[fid],p=activeN(fid);
     el.innerHTML=`<span class="st ${f.status}"></span><span>${esc(fname(f))}</span>${p?`<b>${fmtBadge(p.val)}</b>`:''}`;el.classList.toggle('on',fid===ST.fid);el.classList.toggle('hv',fid===T3.hover);});}
+function roomLabels3D(){const box=$('#rlbl3');if(!box)return;const G=T3.ok&&T3.iso?T3.G.get(ST.fid):null,k=G?ST.fid+':'+G.key:'';if(box.dataset.k===k)return;box.dataset.k=k;
+  box.innerHTML=G?G.rl.map(r=>`<span class="rl">${esc(r.t)}${r.a?` <i>${r.a}</i>`:''}</span>`).join(''):'';}
 function placeLabels(){const box=$('#lbl3'),w=box.clientWidth,h=box.clientHeight;for(const[fid,G]of T3.G){const el=box.querySelector(`[data-f="${fid}"]`);if(!el)continue;
   if(!G.g.visible){el.style.display='none';continue;}T3.v3.set(G.w/2+.4,G.y+.9,G.d/2).project(T3.cam);
-  if(T3.v3.z>1){el.style.display='none';continue;}el.style.display='';const ew=el.offsetWidth||90,x=Math.min(Math.round((T3.v3.x*.5+.5)*w+6),w-ew-8),y=clamp(Math.round((-T3.v3.y*.5+.5)*h-12),8,h-60);el.style.transform=`translate(${x}px,${y}px)`;}}
+  if(T3.v3.z>1){el.style.display='none';continue;}el.style.display='';const ew=el.offsetWidth||90,x=Math.min(Math.round((T3.v3.x*.5+.5)*w+6),w-ew-8),y=clamp(Math.round((-T3.v3.y*.5+.5)*h-12),8,h-60);el.style.transform=`translate(${x}px,${y}px)`;}
+  const rb=$('#rlbl3'),RG=T3.iso?T3.G.get(ST.fid):null;if(!RG||!rb.children.length)return;
+  for(let i=0;i<rb.children.length;i++){const r=RG.rl[i],el=rb.children[i];if(!r)continue;T3.v3.set(r.x,RG.y+.15,r.z).project(T3.cam);if(T3.v3.z>1){el.style.display='none';continue;}
+    el.style.display='';el.style.transform=`translate(${Math.round((T3.v3.x*.5+.5)*w)}px,${Math.round((-T3.v3.y*.5+.5)*h)}px) translate(-50%,-50%)`;}}
 function camPose(pos,tgt,anim){if(!anim||reduced()){T3.cam.position.set(...pos);T3.ctl.target.set(...tgt);T3.camAnim=null;T3.ctl.update();return;}
   T3.camAnim={p0:T3.cam.position.toArray(),t0:T3.ctl.target.toArray(),p1:pos,t1:tgt,s:performance.now(),ms:650};}
 function frame3D(anim){if(!T3.ok)return;const gs=[...T3.G.values()].filter(G=>G.g.visible);if(!gs.length){camPose([28,24,34],[0,0,0],anim);return;}
@@ -1144,18 +1420,18 @@ function renderScope(){const s=ST.scope;if((s.type==='floor'&&(!FL[s.id]||FL[s.i
   const many=PROJ.buildings.length>1,f=FL[ST.fid];if(ST.scope.type==='project'&&!many)autoScope();
   $('#seg').innerHTML=`<button data-sc="floor" class="${ST.scope.type==='floor'?'on':''}" ${f?'':'disabled'}>${f?esc(fname(f)):'This floor'}</button><button data-sc="building" class="${ST.scope.type==='building'?'on':''}">${esc(curB().name)}</button>${many?`<button data-sc="project" class="${ST.scope.type==='project'?'on':''}">All buildings</button>`:''}`;}
 function suggestions(){const t=ST.scope.type,units=scopeFloors(ST.scope).some(f=>f.schema&&f.schema.rooms.some(r=>r.unit));
-  if(t==='floor')return[['How many doors are on this floor?'],['What is the total area of the bedrooms?'],['Which is the largest room?'],['Montako ikkunaa kerroksessa on?','FI']];
+  if(t==='floor')return[['How many doors are on this floor?'],['What is the total area of the bedrooms?'],['How many rooms labelled "MH" are there on this floor?'],['Montako ikkunaa kerroksessa on?','FI']];
   if(t==='building')return[['How many doors are in the building?'],['Which floor has the most windows?'],units?['How many apartments have a sauna?']:['What is the total floor area?'],['Montako saunaa rakennuksessa on?','FI']];
   return[['How many doors in all buildings?'],['Which floor has the most rooms?'],['How many floors are there?']];}
 function renderAskEmpty(){const ms=$('#msgs');if(ms.querySelector('.ans,.uq'))return;const any=Object.values(FL).some(f=>!f.deleted&&isRead(f));
   ms.innerHTML=`<div class="aempty"><h2>Ask the drawings</h2><p>${any?`Asking about <b>${esc(scopeName(ST.scope))}</b>. Every counted item is marked on its floor.`:'Add floor plans first. Once a floor is read you can ask about it, its building, or all buildings.'}</p><div class="sgl">${suggestions().map(([q,l])=>`<button class="sg" data-q="${esc(q)}" ${any?'':'disabled'}>${esc(q)}${l?`<small>${l}</small>`:''}</button>`).join('')}</div></div>`;}
-function ask(q){q=q.trim();if(!q)return;const ms=$('#msgs');ms.querySelector('.aempty')?.remove();
+function ask(q,scope){q=q.trim();if(!q)return;const ms=$('#msgs');ms.querySelector('.aempty')?.remove();
   const u=document.createElement('div');u.className='uq';u.textContent=q;ms.appendChild(u);
-  const A=answer(q,ST.scope);ANS[A.n]=A;const d=document.createElement('div');d.className='ans';d.dataset.n=A.n;ms.appendChild(d);
-  if(A.kind!=='nope')activate(A.n);else d.innerHTML=ansHTML(A);ms.scrollTop=ms.scrollHeight;}
+  const A=answer(q,scope||ST.scope);ANS[A.n]=A;ST.trN=A.n;const d=document.createElement('div');d.className='ans';d.dataset.n=A.n;ms.appendChild(d);
+  if(A.kind!=='nope')activate(A.n);else d.innerHTML=ansHTML(A);ms.scrollTop=ms.scrollHeight;if(ST.trOpen)setTrace(null,'answer');}
 const fmtBadge=v=>ST.active&&ST.active.unit==='m²'?Math.round(v):v;
 function ansHTML(A){
-  if(A.kind==='nope')return`<div class="ahead"><span class="pill no">Can't verify</span></div><div class="atext">${esc(A.text)}</div>`;
+  if(A.kind==='nope')return`<div class="ahead"><span class="pill no">Can't verify</span></div><div class="atext">${esc(A.text)}</div><div class="aact"><button class="alink mut" data-act="opentr" data-ans="${A.n}">See why in the trace</button></div>`;
   const isA=A.unit==='m²',on=ST.active&&ST.active.n===A.n;
   let h=`<div class="ahead"><span class="asc">${esc(scopeName(A.scope))}</span><span class="pill ${A.pill[0]}">${esc(A.pill[1])}</span></div><div class="big"><b>${isA?f1(A.value):A.value}</b><span class="u">${isA?'m²':esc(nounOf(A.P,A.value))}</span></div>`;
   if(A.text)h+=`<div class="atext">${esc(A.text)}</div>`;
@@ -1165,7 +1441,7 @@ function ansHTML(A){
       return`<button class="bar ${p.fid===ST.fid&&on?'cur':''}" data-act="bar" data-f="${p.fid}" data-ans="${A.n}" title="Show ${esc(lbl)}"><span class="bl">${esc(lbl)}</span><span><i style="width:${(p.val||0)/mx*100}%;${p.dim?'opacity:.25':''}"></i></span><span class="bv">${p.val==null?'·':isA?Math.round(p.val):p.val}</span></button>`;}).join('')}</div>`;}
   else if(A.per[0]&&!A.per[0].na&&A.per[0].ev.length&&A.per[0].ev[0].type==='item')
     h+=`<div class="evs">${A.per[0].ev.slice(0,80).map((e,i)=>`<button class="ev" data-act="ev" data-ans="${A.n}" data-f="${A.per[0].fid}" data-ev="${e.id}" title="Zoom to ${e.id}">${i+1}</button>`).join('')}</div>`;
-  h+=`<details class="how"><summary>How this was worked out</summary><div class="calc">${esc(A.calc)}</div><div class="afoot">Worked out in code in ${A.ms.toFixed(1)} ms from the floors already read. Asking costs nothing extra.</div></details>
+  h+=`<details class="how"><summary>How this was worked out</summary><div class="calc">${esc(A.calc)}</div><div class="afoot">Worked out in code in ${A.ms.toFixed(1)} ms from the floors already read. Asking costs nothing extra. <button class="alink" data-act="opentr" data-ans="${A.n}">Every step in the trace</button></div></details>
     <div class="aact">${on?`<span class="asc">Marked on the drawings</span><button class="alink mut" data-act="clearans">Clear</button>`:`<button class="alink" data-act="show" data-ans="${A.n}">Show on the drawings</button>`}</div>`;
   return h;}
 function activeN(fid){const A=ST.active;if(!A||!A.per)return null;const p=A.per.find(q=>q.fid===fid);if(!p||p.na||p.dim||p.val==null)return null;return p;}
@@ -1177,43 +1453,79 @@ function activate(n){const A=ANS[n];if(!A)return;ST.active=A;
 function clearActive(){ST.active=null;refreshAnswerViews();}
 function refreshAnswerViews(){$$('.ans').forEach(el=>{const A=ANS[el.dataset.n];if(A){el.classList.toggle('act',!!ST.active&&ST.active.n===A.n);el.innerHTML=ansHTML(A);}});
   renderList();renderTabs();if(ST.view==='plan'){drawEvidence();renderLegend();}else{pins3D();labels3D();}}
-function rerunAnswers(){const ns=Object.keys(ANS);if(!ns.length)return;ns.forEach(n=>{const o=ANS[n];if(o.kind==='nope'&&o.P&&o.P.unsupported)return;const A=answer(o.q,o.scope);A.n=o.n;QN--;ANS[n]=A;if(ST.active&&ST.active.n===A.n)ST.active=A;});
-  refreshAnswerViews();}
+function rerunAnswers(){const ns=Object.keys(ANS);if(!ns.length)return;ns.forEach(n=>{const o=ANS[n];if(o.kind==='nope'&&o.P&&o.P.unsupported)return;const A=answer(o.q,o.scope,{silent:1});A.n=o.n;ANS[n]=A;if(ST.active&&ST.active.n===A.n)ST.active=A;});
+  refreshAnswerViews();if(ST.trTab==='answer')trSoon();}
+
+/* =====================================================================
+   10b. Trace: every step behind a reading or an answer, live
+   ===================================================================== */
+const fmtMs=ms=>ms<1?ms.toFixed(2)+' ms':ms<1000?Math.round(ms)+' ms':(ms/1000).toFixed(1)+' s';
+const fmtTok=n=>n>=1000?(n/1000).toFixed(1)+'k':String(n);
+const fmtBytes=b=>b>=1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+const fmtScale=m=>`1 px = ${(m*100).toFixed(2)} cm`;
+const anyReading=()=>Object.values(FL).some(f=>!f.deleted&&(f.status==='reading'||f.status==='queued'));
+let TRraf=0;
+function trSoon(){if(!ST.trOpen||TRraf)return;TRraf=requestAnimationFrame(()=>{TRraf=0;renderTrace();});}
+function setTrace(open,tab){if(open!=null){ST.trOpen=!!open;store.set('bl_tr',ST.trOpen);}if(tab)ST.trTab=tab;
+  $('#trace').hidden=!ST.trOpen;$('#trBtn').classList.toggle('on',ST.trOpen);$('#trBtn').setAttribute('aria-pressed',String(ST.trOpen));renderTrace();}
+function renderTrace(){if(!ST.trOpen)return;const live=anyReading();
+  $('#ttabs').innerHTML=[['answer','Answer'],['reading','Reading']].map(([k,l])=>`<button type="button" data-tt="${k}" class="${ST.trTab===k?'on':''}" aria-pressed="${ST.trTab===k}">${l}${k==='reading'&&live?'<i class="tl"></i>':''}</button>`).join('');
+  $('#trb').innerHTML=ST.trTab==='reading'?traceReadingHTML():traceAnswerHTML();}
+function stepHTML(s){return`<div class="ts ${s.s||'ok'}"><span class="tdot"></span><code title="${esc(s.k)}">${esc(s.k)}</code><span class="td">${esc(s.d||'')}</span><span class="tm">${s.s==='run'?fmtMs(performance.now()-s.t0):s.ms!=null?fmtMs(s.ms):''}</span></div>`;}
+function traceAnswerHTML(){const ns=Object.keys(ANS).map(Number),A=ANS[ST.trN]||(ns.length?ANS[Math.max(...ns)]:null);
+  if(!A)return`<div class="tempty">Ask a question and every step shows here: how the question was read, which floors were used, each count or area with the items behind it, the check, and what it cost. Answers are plain code over the schema, so asking makes no model calls.</div>`;
+  const val=A.kind==='nope'?'cannot verify':A.unit==='m²'?f1(A.value)+' m²':A.value+' '+nounOf(A.P,A.value);
+  return`<div class="tq">“${esc(A.q)}” <span class="asc">→ ${esc(val)}</span></div>`+A.steps.map(stepHTML).join('');}
+function traceReadingHTML(){const b=curB(),now=performance.now(),fs=b.floors.map(id=>FL[id]).filter(f=>f.rt);let h='';
+  if(fs.length){const T0=Math.min(...fs.map(f=>f.rt.s)),T1=Math.max(...fs.map(f=>f.rt.e||now)),span=Math.max(1,T1-T0),sum=fs.reduce((a,f)=>a+((f.rt.e||now)-f.rt.s),0),tok=fs.reduce((a,f)=>a+(f.usage?f.usage.in+f.usage.out:0),0),done=fs.filter(f=>f.rt.e).length;
+    h+=`<div class="tsum"><b>${done} of ${fs.length}</b> floor${fs.length>1?'s':''} read in <b>${fmtMs(T1-T0)}</b>, up to ${poolSize()} at a time${fs.length>1&&sum>(T1-T0)*1.2?`; one after another would take about ${fmtMs(sum)}`:''}${tok?` · ${fmtTok(tok)} tokens`:''}. Click a row for its steps.</div>`;
+    h+=`<div class="gantt">${[...fs].reverse().map(f=>{const e=f.rt.e||now;return`<button type="button" class="grow ${f.id===ST.fid?'on':''}" data-act="trf" data-f="${f.id}"><span class="gn">${esc(fname(f))}</span><span class="gt"><i class="${f.status}" style="left:${((f.rt.s-T0)/span*100).toFixed(2)}%;width:${Math.max(.8,(e-f.rt.s)/span*100).toFixed(2)}%"></i></span><span class="gv">${fmtMs(e-f.rt.s)}</span></button>`;}).join('')}</div>`;}
+  const f=FL[ST.fid];
+  if(!f||f.deleted)return h||`<div class="tempty">Add floor plans to watch each one being read: preparing the image, the reader's call with its live output, finding the scale, the checks, and building the 3D.</div>`;
+  h+=`<div class="tgh">${esc(bld(f.bId).name)} · ${esc(fname(f))} <span class="asc">${esc(f.file||'')}</span></div>`;
+  h+=f.steps.length?f.steps.map(stepHTML).join(''):`<div class="tempty">${f.status==='queued'?'Waiting for a free reader.':f.status==='nokey'?esc(f.err||''):'Not read yet.'}</div>`;
+  if(f.rawTail&&f.rawTail.length){if(f.status==='reading'||ST.trRaw)h+=`<div class="tgh">Latest lines from the reader</div><pre class="raw">${esc(f.rawTail.join('\n'))}</pre>`;else h+=`<button type="button" class="alink" data-act="trraw" style="margin-top:8px">Show the reader's last lines</button>`;}
+  return h;}
 
 /* =====================================================================
    11. Settings and help
    ===================================================================== */
 function modal(html){$('#mbox').innerHTML=html;$('#modal').hidden=false;setTimeout(()=>{const el=$('#mbox').querySelector('input:not([type=radio]),button');if(el)el.focus();},0);}
 function closeModal(){$('#modal').hidden=true;$('#mbox').innerHTML='';}
-function settingsModal(){const k=getKey(),viaAcct=SAMPLER&&!CLAUDE_OFF;
-  modal(`<h2>Settings</h2><p class="sub">Choose what reads the floor plans. Everything after reading (answers, proof, 3D) stays the same.</p>
-   <h3>Reading</h3>
-   <label class="opt ${CFG.reader==='claude'?'on':''}"><input type="radio" name="rd" value="claude" ${CFG.reader==='claude'?'checked':''}><div><b>Claude (trial)</b>
-     <span>${viaAcct?'Running on your Claude account in claude.ai. Claude asks once before the first read.':'This copy needs an Anthropic API key. It is kept in this browser only.'}</span>
+function settingsModal(){const k=getKey(),viaAcct=SAMPLER&&!CLAUDE_OFF,inC=!!window.claude;
+  modal(`<h2>Settings</h2><p class="sub">Choose what reads the floor plans. Everything after reading stays the same: answers with proof, 3D, and the trace.</p>
+   <h3>Reader</h3>
+   <label class="opt ${CFG.reader==='api'?'on':''}"><input type="radio" name="rd" value="api" ${CFG.reader==='api'?'checked':''}><div><b>Our model</b>
+     <span>The team's model server. Each floor goes to <code>/api/plan</code> and comes back as a scene from <code>/api/scene</code>; a server with <code>/analyze</code> that returns a schema works too. 3 floors at a time.${inC?' Inside claude.ai this page cannot call other servers: download it, or serve it from the model server.':' The server must allow CORS, or serve this page itself.'}</span>
+     <div class="mrow"><input class="fld" id="ep" value="${esc(CFG.endpoint)}" aria-label="Model server address"><button class="btn sm" id="ping" type="button">Test</button></div><span id="pingr"></span></div></label>
+   <label class="opt ${CFG.reader==='claude'?'on':''}"><input type="radio" name="rd" value="claude" ${CFG.reader==='claude'?'checked':''}><div><b>Claude, as a stand-in until our model is ready</b>
+     <span>${viaAcct?'Runs on your Claude account in claude.ai, 2 floors at a time.':'Needs an Anthropic API key, kept in this browser only. 4 floors at a time.'}</span>
      ${viaAcct?'':`<div class="mrow"><input class="fld" id="kin" type="password" placeholder="Anthropic API key" autocomplete="off" spellcheck="false" aria-label="Anthropic API key"><button class="btn sm" id="ksave" type="button">${k?'Replace':'Save'}</button>${k?'<button class="btn sm" id="kdel" type="button">Remove</button>':''}</div><span>${k?'A key is saved in this browser.':'No key saved yet.'}</span>`}</div></label>
-   <label class="opt ${CFG.reader==='api'?'on':''}"><input type="radio" name="rd" value="api" ${CFG.reader==='api'?'checked':''}><div><b>Blueline API</b><span>For our own model when it is ready: each floor is sent to /analyze and comes back as schema.json.</span>
-     <div class="mrow"><input class="fld" id="ep" value="${esc(CFG.endpoint)}" aria-label="API address"><button class="btn sm" id="ping" type="button">Test</button></div><span id="pingr"></span></div></label>
+   <p class="sub">Already have the model's output? No reader is needed: drop each plan image together with its schema JSON (same file name), or the JSON alone.</p>
    <div class="mrow"><button class="btn sm" data-act="readall">Read all floors again</button></div>
    <h3>Data</h3><div class="mrow"><button class="btn sm" data-act="exportjson">Export floors (JSON)</button><button class="btn sm" data-act="exportcsv">Export quantities (CSV)</button></div>
    <div class="mact"><button class="btn pri" data-act="close">Done</button></div>`);
-  $$('#mbox input[name=rd]').forEach(r=>r.onchange=()=>{CFG.reader=r.value;store.set('bl_reader',CFG.reader);$$('#mbox .opt').forEach(o=>o.classList.toggle('on',o.querySelector('input[type=radio]').checked));renderStatus();});
+  $$('#mbox input[name=rd]').forEach(r=>r.onchange=()=>{CFG.reader=r.value;store.set('bl_reader',CFG.reader);$$('#mbox .opt').forEach(o=>o.classList.toggle('on',o.querySelector('input[type=radio]').checked));renderStatus();pump();});
   const ks=$('#ksave');if(ks)ks.onclick=e=>{e.preventDefault();const v=$('#kin').value.trim();if(!v){$('#kin').focus();return;}setKey(v);toast('Key saved in this browser.');requeueNokey();settingsModal();};
   const kd=$('#kdel');if(kd)kd.onclick=e=>{e.preventDefault();setKey('');settingsModal();renderStatus();};
   $('#ep').onchange=()=>{CFG.endpoint=$('#ep').value.trim()||CFG.endpoint;store.set('bl_endpoint',CFG.endpoint);};
-  $('#ping').onclick=async e=>{e.preventDefault();CFG.endpoint=$('#ep').value.trim()||CFG.endpoint;store.set('bl_endpoint',CFG.endpoint);$('#pingr').textContent='Testing…';
-    try{const r=await fetch(CFG.endpoint.replace(/\/$/,'')+'/health');$('#pingr').textContent=r.ok?'Connected.':'It answered '+r.status+'.';}catch(err){$('#pingr').textContent='Could not reach it. Is it running, with CORS allowed?';}};}
+  $('#ping').onclick=async e=>{e.preventDefault();CFG.endpoint=$('#ep').value.trim()||CFG.endpoint;store.set('bl_endpoint',CFG.endpoint);const out=$('#pingr');out.textContent='Testing…';
+    if(inC){out.textContent='claude.ai blocks calls from this page to other servers. Download the page and open it locally, or serve it from the model server.';return;}
+    try{const r=await fetch(CFG.endpoint.replace(/\/$/,'')+'/api/scene?id=ping'),j=await r.json().catch(()=>null);out.textContent=r.status===404&&j&&/plan not found/i.test(j.error||'')?'Team model server found. Choose "Our model" to use it.':r.ok?'Connected.':`It answered ${r.status}.`;}
+    catch(err){out.textContent='Could not reach it. Is it running, with CORS allowed?';}};}
 function helpModal(){modal(`<h2>How Blueline works</h2>
-  <ol class="steps"><li><b>Add floor plans.</b> One image per floor, or a PDF with a page per floor. Each floor becomes a card on the left.</li>
+  <ol class="steps"><li><b>Add floor plans.</b> One image per floor, or a PDF with a page per floor. Each floor becomes a card on the left. Already have model output? Drop the image with its schema JSON.</li>
    <li><b>Put them in order.</b> Drag cards up or down; the top card is the top floor. Drop a card on a building tab to move it there.</li>
-   <li><b>Let it read.</b> Claude reads each floor once: rooms, doors, windows, fixtures and the scale. You see the trace appear.</li>
-   <li><b>Look around.</b> Plan shows one floor. 3D stacks the whole building; click a floor to pick it, double-click to open it.</li>
-   <li><b>Ask.</b> About this floor, the building, or all buildings, in English or Finnish. Every counted item is marked, floor by floor.</li></ol>
-  <h3>Shortcuts</h3><div class="keys"><kbd>P</kbd><span>Plan view</span><kbd>3</kbd><span>3D view</span><kbd>↑ ↓</kbd><span>Floor above or below</span><kbd>Alt ↑ ↓</kbd><span>Move the floor up or down</span><kbd>F</kbd><span>Frame the view</span><kbd>T</kbd><span>Show or hide what was read</span><kbd>Delete</kbd><span>Delete the floor (with undo)</span></div>
+   <li><b>Let it read.</b> Floors are read in parallel. The reader returns a schema: rooms, doors, windows, fixtures and the scale. Each step shows live in the trace.</li>
+   <li><b>Look around.</b> Plan shows one floor with what was read. 3D stacks the building, built from the schema alone.</li>
+   <li><b>Ask.</b> About a floor, the building, or all buildings. Answers are plain code over the schema: every item is marked, and the trace shows each step and its cost.</li></ol>
+  <h3>Shortcuts</h3><div class="keys"><kbd>P</kbd><span>Plan view</span><kbd>3</kbd><span>3D view</span><kbd>T</kbd><span>Show or hide the trace</span><kbd>R</kbd><span>Show or hide what was read</span><kbd>↑ ↓</kbd><span>Floor above or below</span><kbd>Alt ↑ ↓</kbd><span>Move the floor up or down</span><kbd>F</kbd><span>Frame the view</span><kbd>Delete</kbd><span>Delete the floor (with undo)</span></div>
   <div class="mact"><button class="btn pri" data-act="close">Got it</button></div>`);}
 function requeueNokey(){Object.values(FL).forEach(f=>{if(!f.deleted&&f.status==='nokey')queueRead(f);});renderStatus();}
-function readerLabel(){return CFG.reader==='api'?'Blueline API':SAMPLER&&!CLAUDE_OFF?'Claude (your account)':getKey()?'Claude (API key)':'Claude (needs access)';}
-function renderStatus(){const fs=Object.values(FL).filter(f=>!f.deleted),rd=fs.filter(isRead).length,busy=fs.filter(f=>f.status==='reading'||f.status==='queued').length;
-  $('#stat').textContent=fs.length?`${rd}/${fs.length} floors read${busy?` · reading ${busy}`:''} · reader: ${readerLabel()}`:`Reader: ${readerLabel()}`;}
+function readerLabel(){return CFG.reader==='api'?'our model':SAMPLER&&!CLAUDE_OFF?'Claude stand-in':getKey()?'Claude stand-in (API key)':'Claude stand-in (needs access)';}
+function renderStatus(){const fs=Object.values(FL).filter(f=>!f.deleted),rd=fs.filter(isRead).length,ing=fs.filter(f=>f.status==='reading').length,wait=fs.filter(f=>f.status==='queued').length;
+  $('#stat').textContent=fs.length?`${rd}/${fs.length} floors read${ing||wait?` · reading ${ing}${wait?`, ${wait} waiting`:''}, up to ${poolSize()} at a time`:''} · reader: ${readerLabel()}`:`Reader: ${readerLabel()}`;
+  const tl=$('#trLive');if(tl)tl.hidden=!(ing||wait);}
 function renderHint(){$('#hint').textContent=!curB().floors.length?'Add floor plans to start, or try the sample building.':ST.view==='3d'?'Click a floor to pick it · double-click to open its plan · drag cards on the left to reorder':'Scroll to zoom · drag to pan · click a room · ↑ ↓ change floor · drag cards to reorder';}
 function exportCSV(){const rows=[['building','floor','name','file','status','rooms','doors','windows','toilets','saunas','area_m2']];
   PROJ.buildings.forEach(b=>b.floors.forEach((id,i)=>{const f=FL[id],sc=f.schema,c=k=>sc?sc.items.filter(x=>x.kind===k).length:'';rows.push([b.name,i+1,fname(f),f.file,f.status,sc?sc.rooms.length:'',c('door'),c('window'),c('toilet'),sc?sc.rooms.filter(r=>r.type==='Sauna').length:'',sc?sc.rooms.reduce((a,r)=>a+(roomArea(sc,r)||0),0).toFixed(2):'']);}));
@@ -1224,9 +1536,10 @@ function exportJSON(){const strip=sc=>JSON.parse(JSON.stringify(sc,(k,v)=>k.star
 /* =====================================================================
    12. Events
    ===================================================================== */
-function renderAll(){renderTabs();renderList();updateEmpty();if(ST.view==='plan')renderPlan();else sync3D();renderScope();renderAskEmpty();renderStatus();renderHint();}
+function renderAll(){renderTabs();renderList();updateEmpty();if(ST.view==='plan')renderPlan();else sync3D();renderScope();renderAskEmpty();renderStatus();renderHint();trSoon();}
 document.addEventListener('click',e=>{
-  const t=e.target.closest('[data-act],[data-q],[data-sc],.btab[data-b]');if(!t)return;
+  const t=e.target.closest('[data-act],[data-q],[data-sc],[data-tt],.btab[data-b]');if(!t)return;
+  if(t.dataset.tt){setTrace(null,t.dataset.tt);return;}
   if(t.dataset.q){if(!t.disabled)ask(t.dataset.q);return;}
   if(t.dataset.sc){ST.scopeMode='manual';ST.scope=t.dataset.sc==='floor'?{type:'floor',id:ST.fid}:t.dataset.sc==='building'?{type:'building',id:ST.bId}:{type:'project'};renderScope();renderAskEmpty();return;}
   const a=t.dataset.act,card=t.closest('.fc'),fid=t.dataset.f||(card&&card.dataset.f);
@@ -1255,6 +1568,10 @@ document.addEventListener('click',e=>{
     case 'readall':closeModal();Object.values(FL).forEach(f=>{if(!f.deleted&&PROJ.buildings.some(b=>b.floors.includes(f.id)))queueRead(f);});break;
     case 'exportjson':exportJSON();break;case 'exportcsv':exportCSV();break;
     case 'close':closeModal();break;
+    case 'trclose':setTrace(false);break;
+    case 'opentr':ST.trN=+t.dataset.ans;setTrace(true,'answer');break;
+    case 'trf':selectFloor(fid);setTrace(null,'reading');break;
+    case 'trraw':ST.trRaw=!ST.trRaw;renderTrace();break;
   }
 });
 document.addEventListener('dblclick',e=>{const nm=e.target.closest('.fnm');if(nm&&!nm.querySelector('input')){startRename(nm.closest('.fc').dataset.f);return;}const tab=e.target.closest('.btab[data-b]');if(tab&&!e.target.closest('.bx')&&!tab.querySelector('input'))renameBuilding(tab.dataset.b);});
@@ -1265,7 +1582,7 @@ $('#flist').addEventListener('keydown',e=>{const c=e.target.closest('.fc');if(!c
   if(e.key==='Enter'||e.key===' '){e.preventDefault();selectFloor(c.dataset.f);}
   if(e.altKey&&(e.key==='ArrowUp'||e.key==='ArrowDown')){e.preventDefault();e.stopPropagation();moveFloor(c.dataset.f,e.key==='ArrowUp'?1:-1);}});
 $('#vPlan').onclick=()=>setView('plan');$('#v3d').onclick=()=>setView('3d');
-$('#setBtn').onclick=settingsModal;$('#helpBtn').onclick=helpModal;$('#upBtn').onclick=()=>$('#file').click();$('#fadd').onclick=()=>$('#file').click();
+$('#setBtn').onclick=settingsModal;$('#trBtn').onclick=()=>setTrace(!ST.trOpen);$('#helpBtn').onclick=helpModal;$('#upBtn').onclick=()=>$('#file').click();$('#fadd').onclick=()=>$('#file').click();
 $('#pname').addEventListener('change',e=>{PROJ.name=e.target.value.trim()||'My project';});
 $('#file').addEventListener('change',e=>{const fs=[...e.target.files];e.target.value='';if(fs.length)addFiles(fs);});
 $('#comp').addEventListener('submit',e=>{e.preventDefault();const q=$('#q');ask(q.value);q.value='';q.style.height='';});
@@ -1279,7 +1596,8 @@ document.addEventListener('keydown',e=>{
   if(e.key==='p'||e.key==='P')setView('plan');else if(e.key==='3')setView('3d');
   else if((e.key==='ArrowUp'||e.key==='ArrowDown')&&ST.fid){e.preventDefault();if(e.altKey)moveFloor(ST.fid,e.key==='ArrowUp'?1:-1);else{const j=i+(e.key==='ArrowUp'?1:-1);if(b.floors[j])selectFloor(b.floors[j]);}}
   else if(e.key==='f'||e.key==='F'){if(ST.view==='plan'){fitPlan();drawEvidence();}else frame3D(true);}
-  else if(e.key==='t'||e.key==='T'){ST.trace=!ST.trace;renderVnav();drawTrace();renderLegend();}
+  else if(e.key==='t'||e.key==='T')setTrace(!ST.trOpen);
+  else if(e.key==='r'||e.key==='R'){ST.trace=!ST.trace;renderVnav();drawTrace();renderLegend();}
   else if((e.key==='Delete'||e.key==='Backspace')&&ST.fid){e.preventDefault();deleteFloor(ST.fid);}
 });
 /* dropping files: on the floor list they go in at the drop position; anywhere else they go on top */
@@ -1295,6 +1613,10 @@ $('#flist').addEventListener('dragover',e=>{if(!hasFiles(e))return;e.preventDefa
   let el=$('#insl');if(!el){el=document.createElement('div');el.id='insl';el.className='insl';list.appendChild(el);}el.style.top=top+'px';});
 function hideIns(){const el=$('#insl');if(el)el.remove();}
 new ResizeObserver(()=>{if(ST.view==='plan'){applyVB();drawEvidence();}else size3D();}).observe($('#vw'));
+(()=>{const gr=$('#tgrip');let d=null; // drag the top edge of the trace to resize it
+  gr.addEventListener('pointerdown',e=>{d={y:e.clientY,h:$('#trace').offsetHeight};gr.setPointerCapture(e.pointerId);e.preventDefault();});
+  gr.addEventListener('pointermove',e=>{if(!d)return;$('#trace').style.setProperty('--trh',clamp(d.h-(e.clientY-d.y),110,Math.round(innerHeight*.7))+'px');});
+  gr.addEventListener('pointerup',()=>{if(d)store.set('bl_trh',$('#trace').offsetHeight);d=null;});})();
 
 /* =====================================================================
    13. Boot
@@ -1302,8 +1624,14 @@ new ResizeObserver(()=>{if(ST.view==='plan'){applyVB();drawEvidence();}else size
 $('#vPlan').innerHTML=I.plan+'<span>Plan</span>';$('#v3d').innerHTML=I.cube+'<span>3D</span>';
 $('#helpBtn').innerHTML=I.help;$('#setBtn').innerHTML=I.gear;$('#upIc').innerHTML=I.upl;$('#send').innerHTML=I.send;
 $('#fadd').innerHTML=I.plus+'<span>Add floor plans</span>';
-renderEmpty();renderVnav();renderCtl3();renderAll();
-window.BL={PROJ,FL,ST,T3,ANS,ask,answer,addFiles,loadSample,setView,selectFloor,moveFloor,deleteFloor,queueRead};
+$('#trIc').innerHTML=I.trace;$('#trclose').innerHTML=I.x;
+ST.trOpen=store.get('bl_tr',true);{const th=store.get('bl_trh',0);if(th)$('#trace').style.setProperty('--trh',th+'px');}
+renderEmpty();renderVnav();renderCtl3();renderAll();setTrace(null);
+setInterval(()=>{if(ST.trOpen&&ST.trTab==='reading'&&anyReading())renderTrace();},500);
+/* served by the team's model server itself? then it can read the floors with no setup */
+if(!window.claude&&/^https?:$/.test(location.protocol))fetch('/api/scene?id=probe').then(r=>r.status===404?r.json():null).then(j=>{if(!j||!/plan not found/i.test(j.error||''))return;
+  CFG.endpoint=location.origin;store.set('bl_endpoint',CFG.endpoint);if(store.get('bl_reader',null)==null)CFG.reader='api';renderStatus();toast(CFG.reader==='api'?'Our model is serving this page and reads the floors.':'Our model server found. Choose it in Settings.');}).catch(()=>{});
+window.BL={PROJ,FL,ST,T3,ANS,CFG,ask,answer,parseQ,evalSheet,addFiles,loadSample,setView,selectFloor,moveFloor,deleteFloor,queueRead,setTrace,poolSize,wallModel,fromTeamSchematic,fromTeamScene};
 </script>
 </body>
 </html>

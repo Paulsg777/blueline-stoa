@@ -630,8 +630,8 @@ async function prepDrawable(src,nw,nh,name){
   return{name,W,H,blob,thick,canvas:c,url:URL.createObjectURL(blob),stats:{nw:Math.round(nw),nh:Math.round(nh),thr:t,k:kk,ms:Math.round(performance.now()-tp0)}};
 }
 async function prepFile(file){const url=URL.createObjectURL(file);
-  try{const img=new Image();img.src=url;await img.decode();let nw=img.naturalWidth,nh=img.naturalHeight;if(nw<16||nh<16){nw=1600;nh=1200;}const P=await prepDrawable(img,nw,nh,file.name);P.orig=file;return P;}
-  finally{setTimeout(()=>URL.revokeObjectURL(url),1000);}}
+  try{const img=new Image();img.src=url;await img.decode();let nw=img.naturalWidth,nh=img.naturalHeight;if(nw<16||nh<16){nw=1600;nh=1200;}const P=await prepDrawable(img,nw,nh,file.name);P.orig=file;P.hiSrc=img;P.hiUrl=url;return P;} // the full-resolution original stays for the plan view and 3D
+  catch(e){URL.revokeObjectURL(url);throw e;}}
 const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.7.76/build/';
 async function pdfPages(file){ // every page of a PDF becomes one floor
   const lib=await import(PDFJS+'pdf.min.mjs');lib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.mjs';
@@ -1081,7 +1081,7 @@ async function addFiles(files,o={}){
   if(srcs.length>1&&srcs.every(s=>guessLevel(s.name)!=null))srcs.sort((a,c)=>guessLevel(a.name)-guessLevel(c.name));
   else if(srcs.length>1&&!srcs.some(s=>s.canvas))srcs.sort((a,c)=>a.name.localeCompare(c.name,undefined,{numeric:true}));
   const made=[];
-  for(const s of srcs){let P;try{P=s.canvas?await prepDrawable(s.canvas,s.canvas.width,s.canvas.height,s.name):await prepFile(s.file);if(s.canvas)P.origCanvas=s.canvas;}catch(e){bad.push(s.name);continue;}
+  for(const s of srcs){let P;try{P=s.canvas?await prepDrawable(s.canvas,s.canvas.width,s.canvas.height,s.name):await prepFile(s.file);if(s.canvas){P.origCanvas=s.canvas;P.hiSrc=s.canvas;P.hiUrl=URL.createObjectURL(await origBlob(P));}}catch(e){bad.push(s.name);continue;}
     const k=base(s.name),j=js[k];if(j)delete js[k];made.push(makeFloor(b.id,{src:'upload',file:s.name,img:P,schemaJson:j||null,meta:{name:s.file?s.file.name:s.name,bytes:s.file?s.file.size:null,page:s.page||null,pages:s.pages||null}}));}
   Object.keys(js).forEach(k=>made.push(makeFloor(b.id,{src:'json',file:k+'.json',schemaJson:js[k]})));
   if(!made.length){toast(bad.length?`Could not add ${bad.join(', ')}.`:'Add PNG, JPG, SVG or PDF floor plans.');return;}
@@ -1102,7 +1102,7 @@ function renderPlan(){
   const f=FL[ST.fid],has=!!f&&!f.deleted;updateEmpty();
   if(!has){['#pbase','#ptrace','#plive','#phit','#pev'].forEach(s=>$(s).innerHTML='');['#legend','#insp','#rdban'].forEach(s=>$(s).hidden=true);$('#flab').innerHTML='';scanCtl();return;}
   const[W,H]=dims(f);
-  $('#pbase').innerHTML=f.img?`<rect class="pg" width="${W}" height="${H}"/><image href="${f.img.url}" width="${W}" height="${H}" filter="url(#inv)"/>`:`<use href="#sd-${f.id}"/>`;
+  $('#pbase').innerHTML=f.img?`<rect class="pg" width="${W}" height="${H}"/><image href="${f.img.hiUrl||f.img.url}" width="${W}" height="${H}" filter="url(#inv)" image-rendering="optimizeQuality"/>`:`<use href="#sd-${f.id}"/>`;
   if(!VB[f.id])fitPlan();else applyVB();
   drawTrace();drawLiveAll();drawHit();drawEvidence();renderFlab();renderLegend();renderInspect();renderReadBan();scanCtl();
 }
@@ -1251,9 +1251,9 @@ function wallModel(f,mpp){const sc=f.schema;if(!sc||!sc.rooms.length)return null
     fix.push({x:cx,y:cy,w:clamp(w,.2,2.4),d:clamp(d,.2,2.4),h:S[2]});});
   return{GW,GH,cs,cell,wall,rail,lint,sill,nd,nw,miss,fix};}
 function invertDark(g,w,h){const im=g.getImageData(0,0,w,h),d=im.data;for(let i=0;i<d.length;i+=4){const l=(d[i]*299+d[i+1]*587+d[i+2]*114)/255000,v=42+176*(1-l);d[i]=v;d[i+1]=v;d[i+2]=v+3;}g.putImageData(im,0,0);}
-async function texCanvas(f,c){const cw=c[2]-c[0],ch=c[3]-c[1],k=Math.min(2,1024/Math.max(cw,ch)),TW=Math.max(2,Math.round(cw*k)),TH=Math.max(2,Math.round(ch*k));
+async function texCanvas(f,c){const cw=c[2]-c[0],ch=c[3]-c[1],k=Math.min(4,(T3.R?Math.min(4096,T3.R.capabilities.maxTextureSize):2048)/Math.max(cw,ch)),TW=Math.max(2,Math.round(cw*k)),TH=Math.max(2,Math.round(ch*k));
   const cv=document.createElement('canvas');cv.width=TW;cv.height=TH;const g=cv.getContext('2d',{willReadFrequently:true});
-  if(f.img){g.drawImage(f.img.canvas,c[0],c[1],cw,ch,0,0,TW,TH);invertDark(g,TW,TH);}else{g.drawImage(await svgImage(f),c[0],c[1],cw,ch,0,0,TW,TH);}return cv;}
+  if(f.img){const src=f.img.hiSrc||f.img.canvas,sx=(src.naturalWidth||src.width)/f.img.W,sy=(src.naturalHeight||src.height)/f.img.H;g.imageSmoothingQuality='high';g.drawImage(src,c[0]*sx,c[1]*sy,cw*sx,ch*sy,0,0,TW,TH);invertDark(g,TW,TH);}else{g.drawImage(await svgImage(f),c[0],c[1],cw,ch,0,0,TW,TH);}return cv;}
 function disposeObj(o){o.traverse(x=>{if(x.geometry&&!T3.shared.has(x.geometry))x.geometry.dispose();const ms=Array.isArray(x.material)?x.material:x.material?[x.material]:[];ms.forEach(m=>{if(T3.shared.has(m))return;if(m.map)m.map.dispose();m.dispose();});});}
 function build3DFloor(f){const THREE=T3.THREE,mpp=mppOf(f),key=f.v+':'+mpp.toFixed(6);let G=T3.G.get(f.id);if(G&&G.key===key)return G;
   const prev=G;if(prev){T3.root.remove(prev.g);disposeObj(prev.g);}

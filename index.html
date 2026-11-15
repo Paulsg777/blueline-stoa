@@ -718,7 +718,9 @@ function schemaSteps(f){const sc=f.schema,S=sc._stats||{},sm=sc.drawing.scale||{
     rstep(f,'snap_outlines','ok',sc.rooms.length?`${S.snapped} of ${sc.rooms.length} room outlines moved onto the wall faces in the image (mean shift ${(S.shift||0).toFixed(1)} px); the rest already matched.`:'No rooms to snap.');}
   rstep(f,'detect_scale',!mpp||sm.estimated?'warn':'ok',mpp?`${fmtScale(mpp)} · ${S.scaleNote||sm.method}${sm.text?` · printed scale ${sm.text}`:''}`:'No scale bar, printed dimension or printed area found. Counts still work; areas are given only where they are printed.');
   const nd=sc.items.filter(i=>i.kind==='door').length;
-  rstep(f,'link_items','ok',`${sc.rooms.length} rooms, ${sc.items.length} items placed in rooms${S.lines!=null?`; of ${nd} door${nd===1?'':'s'}, ${S.lg||0} joined to rooms by the model and ${S.ln||0} by nearest room`:''}.`);}
+  rstep(f,'link_items','ok',`${sc.rooms.length} rooms, ${sc.items.length} items placed in rooms${S.lines!=null?`; of ${nd} door${nd===1?'':'s'}, ${S.lg||0} joined to rooms by the model and ${S.ln||0} by nearest room`:''}.`);
+  const ck=sc.meta&&Array.isArray(sc.meta.check)?sc.meta.check:null; // the second look: every objection the model raised and what code decided
+  if(ck)rstep(f,'second_look',ck.length?'ok':'ok',ck.length?`Second look: the model raised ${ck.length} objection${ck.length===1?'':'s'}, each checked in code · ${ck.slice(0,8).join(' · ')}${ck.length>8?` · and ${ck.length-8} more`:''}`:'Second look: the model found nothing to correct.');}
 async function readFloor(f){
   f.via=f.src==='sample'?'Loading the sample':f.schemaJson?'Loading the schema file':'Our model is reading';
   if(f.src==='sample'){startRead(f);f.t0=0;await sleep(160+Math.random()*260);if(f.deleted)return;f.schema=JSON.parse(JSON.stringify(f.sample));return finishRead(f,'Sample');}

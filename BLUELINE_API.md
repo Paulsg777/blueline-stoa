@@ -1,10 +1,10 @@
-# Blueline frontend ↔ our reader
+# BSEARCH frontend ↔ our reader
 
-**Run:** `python3 blueline_api.py` in `floorplan_env` → `http://localhost:8000`. In the page: **Reader → Blueline API → `http://localhost:8000`**. Open `index.html` locally. CORS is open, so `file://` works.
+**Run:** `python3 blueline_api.py` in `floorplan_env` → `http://localhost:8000`. In the page: **Reader → BSEARCH API → `http://localhost:8000`**. Open `index.html` locally. CORS is open, so `file://` works.
 
 The server implements the frontend's contract unchanged. It also adds one endpoint.
 
-## `POST /analyze` (file, sheet) → BluelineSchema
+## `POST /analyze` (file, sheet) → BSEARCHSchema
 
 This is read deterministically, with **no model call** (`meta.modelCalls = 0`, `meta.costEUR = 0`):
 

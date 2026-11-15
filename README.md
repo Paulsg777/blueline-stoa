@@ -1,6 +1,8 @@
-# Blueline for Stoa
+# BSEARCH
 
-Ask a whole construction project a question and see exactly where every answer comes from.
+**Thousands of messy drawings, searchable in seconds.**
+
+BSEARCH turns piles of construction drawings into one structured database that people and AI agents can search and talk to. Every answer is shown on the drawing.
 
 Junction 2026, Stoa challenge "Make Blueprints Talk". Single self-contained file: open `index.html` in a browser.
 
@@ -30,7 +32,7 @@ The page finds the model by itself, in this order: `?api=https://...` in the pag
 
 The page prefers `measuredAreaM2`, then a printed area, then the outline area at the drawing scale.
 
-**Model output files, no server:** drop each plan image with its schema JSON of the same name (`plan_krs1.png` + `plan_krs1.json`), or the JSON alone. Both the Blueline contract (below) and the schematic format from `schema.md` (rooms with `polygon`, `number`, `label`, `printed_area_m2`, `apartment`; items with a `point`; `scale.px_per_m`) work.
+**Model output files, no server:** drop each plan image with its schema JSON of the same name (`plan_krs1.png` + `plan_krs1.json`), or the JSON alone. Both the BSEARCH contract (below) and the schematic format from `schema.md` (rooms with `polygon`, `number`, `label`, `printed_area_m2`, `apartment`; items with a `point`; `scale.px_per_m`) work.
 
 Inside claude.ai the page cannot call other servers, so open it from the model's URL instead. Running the HackToTheFuture server locally needs CORS (or serve `index.html` from its `web/` folder):
 
@@ -69,13 +71,13 @@ The question rules follow the team's `answer.py`, so the interface answers the w
 
 "This floor plan" means the floor you are looking at; "in total" no longer jumps to the whole building.
 
-## Blueline contract
+## BSEARCH contract
 
 ```ts
 type Pt = [number, number];                  // page-image pixels
 type Box = [number, number, number, number]; // x0, y0, x1, y1
 
-interface BluelineSchema {
+interface BSEARCHSchema {
   drawing: { width: number; height: number;
              metersPerPixel: number | null;  // null = no scale, areas only where printed
              scale?: { method: string; text?: string; estimated?: boolean }; storeys?: number };

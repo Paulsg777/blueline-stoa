@@ -1,6 +1,6 @@
 # Question planning API (for our model server)
 
-Blueline answers simple questions with fixed rules. Anything with extra conditions ("doors in the bedrooms", "rooms over 15 m²", "windows and doors") goes to the model server, which turns the question into a **plan**. The page runs the plan in code on the schema it already has, marks every item, and shows "Read as: …". The model never answers with a number itself.
+BSEARCH answers simple questions with fixed rules. Anything with extra conditions ("doors in the bedrooms", "rooms over 15 m²", "windows and doors") goes to the model server, which turns the question into a **plan**. The page runs the plan in code on the schema it already has, marks every item, and shows "Read as: …". The model never answers with a number itself.
 
 ## Endpoint
 

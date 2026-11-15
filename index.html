@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Blueline for Stoa</title>
+<title>BSEARCH</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -12,8 +12,8 @@
 /* VOICE   a quiet, technical work tool, like the layers panel beside a CAD viewport
    IDEA    a building is a stack of floor sheets: the left panel IS the stack, the viewport shows one sheet (Plan) or the whole stack (3D)
    PICTURE the viewport: dark sheet, blue trace of what was read, numbered proof marks; in 3D, plates stacked with walls rising
-   COLOUR  greys #1C1C1C to #303030, ink #E4E4E4, Blueline blue #5B95FF, orange #E8A33D only for warnings
-   LAYOUT  header; floors | viewport | ask; status bar. Narrow screens stack them. Blueline V5, 14 Nov 2026 */
+   COLOUR  greys #1C1C1C to #303030, ink #E4E4E4, BSEARCH blue #5B95FF, orange #E8A33D only for warnings
+   LAYOUT  header; floors | viewport | ask; status bar. Narrow screens stack them. BSEARCH V5, 14 Nov 2026 */
 :root{color-scheme:dark;--app:#1C1C1C;--pan:#232323;--hdr:#262626;--card:#2A2A2A;--card2:#303030;--fld:#1F1F1F;--vp:#2D2D2D;--bd:#151515;--bd2:#3A3A3A;--ink:#E4E4E4;--mut:#9A9A9A;--fnt:#6E6E6E;--blue:#5B95FF;--blue2:#8DB6FF;--bdg:#3A74E8;--bsel:#2B4677;--org:#E8A33D;--ok:#7CC48A;--red:#E06C6C}
 *{box-sizing:border-box;min-width:0}
 html,body{height:100%}
@@ -30,7 +30,7 @@ body.dragui,body.dragui *{cursor:grabbing!important;user-select:none!important}
 /* header */
 .hdr{display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--hdr);border-bottom:1px solid var(--bd)}
 .logo{position:relative;font:800 15px/1 Inter,sans-serif;letter-spacing:-.03em;color:#F2F2F2;flex:none}
-.logo i{position:absolute;left:-3px;right:-3px;top:52%;height:1.5px;background:var(--blue);transform-origin:left;animation:slice .8s cubic-bezier(.65,0,.35,1) .15s both}
+.logo i{position:absolute;left:0;right:0;top:calc(100% + 3px);height:2px;border-radius:1px;background:var(--blue);transform-origin:left;animation:slice .8s cubic-bezier(.65,0,.35,1) .15s both}
 @keyframes slice{from{transform:scaleX(0)}}
 .sep{width:1px;height:16px;background:var(--bd2);flex:none}
 .pname{background:none;border:1px solid transparent;border-radius:6px;padding:4px 8px;width:200px;font-weight:500}
@@ -421,7 +421,7 @@ details.how summary:hover{color:var(--ink)}
 <body>
 <div class="app">
   <header class="hdr">
-    <span class="logo">Blueline<i></i></span>
+    <span class="logo">BSEARCH<i></i></span>
     <span class="sep"></span>
     <input class="pname" id="pname" value="My project" aria-label="Project name" spellcheck="false" maxlength="60">
     <span class="sp"></span>
@@ -573,7 +573,7 @@ const aptKey=s=>{const t=String(s||'').replace(/\b(app|apt|whg|wohnung|apartment
 
 /* =====================================================================
    2. Sample building generator (a stand-in for real sheets). Builds each
-      floor in metres, exports it in the Blueline contract (page pixels).
+      floor in metres, exports it in the BSEARCH contract (page pixels).
    ===================================================================== */
 const PPM=40,OX=110,OY=150,PW=1400,PH=900,DW=0.85;
 const X=m=>OX+m*PPM,Y=m=>OY+m*PPM;
@@ -759,7 +759,7 @@ function validateSchema(s){const e=[];if(!s||typeof s!=='object')return['not an 
   s.rooms.forEach((r,i)=>{if(!Array.isArray(r.polygon)||r.polygon.length<3)e.push(`rooms[${i}].polygon`);if(!RT[r.type])r.type=TYPEMAP[String(r.type||'').toLowerCase()]||'Room';r.id=r.id||'R'+(i+1);if(r.printedAreaM2===undefined)r.printedAreaM2=null;});
   s.items.forEach((it,i)=>{if(!Array.isArray(it.box)||it.box.length!==4)e.push(`items[${i}].box`);it.id=it.id||'I'+(i+1);it.roomIds=it.roomIds||[];});
   s.walls=s.walls||[];s.texts=s.texts||[];s.meta=s.meta||{};if(d.metersPerPixel===undefined)d.metersPerPixel=null;if(!d.scale)d.scale={method:d.metersPerPixel?'schema':'none'};return e;}
-/* adapters: other readers' output -> the Blueline contract */
+/* adapters: other readers' output -> the BSEARCH contract */
 function linkItems(rooms,items){items.forEach(it=>{if(it.roomIds&&it.roomIds.length)return;const b=it.box,c=[(b[0]+b[2])/2,(b[1]+b[3])/2],tol=Math.max(b[2]-b[0],b[3]-b[1])*.8+4;
   it.roomIds=rooms.map(r=>({id:r.id,d:inPoly(c,r.polygon)?0:edgeD(c,r.polygon)})).filter(h=>h.d<=tol).sort((a,b)=>a.d-b.d).slice(0,it.kind==='door'?2:1).map(h=>h.id);});}
 function rescaleSchema(s,P){const d=s.drawing,kx=P.W/(d.width||P.W),ky=P.H/(d.height||P.H);if(Math.abs(kx-1)<.002&&Math.abs(ky-1)<.002){d.width=P.W;d.height=P.H;return;}
@@ -827,7 +827,7 @@ async function readApi(f){startRead(f);f.live=null;const ctl=new AbortController
     if(CFG.proto==='analyze')return await readAnalyze(f,ep,blob,ctl);
     rstep(f,'model.upload','run',`POST ${ep}/api/plan · ${fmtBytes(blob.size)}`);
     let res;try{res=await fetch(ep+'/api/plan',{method:'POST',body:blob,headers:{'X-Filename':(f.file||'plan').replace(/[^\w.\- ]/g,'_')+'.png'},signal:ctl.signal});}
-    catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'offline',message:window.claude?`claude.ai blocks this page from calling ${ep}. Open Blueline from the model server instead (copy index.html into its web/ folder).`:`Can't reach our model at ${ep}. Is the server running? If this page is not served by it, the server must allow CORS.`};}
+    catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'offline',message:window.claude?`claude.ai blocks this page from calling ${ep}. Open BSEARCH from the model server instead (copy index.html into its web/ folder).`:`Can't reach our model at ${ep}. Is the server running? If this page is not served by it, the server must allow CORS.`};}
     if(res.status===404||res.status===405){rstep(f,'model.upload','ok','Using /analyze.');CFG.proto='analyze';return await readAnalyze(f,ep,blob,ctl);}
     if(!res.ok)throw{code:'api_error',message:`${ep}/api/plan answered ${res.status}`};
     const pl=await res.json();rstep(f,'model.upload','ok',`plan ${pl.id} · ${pl.width} × ${pl.height} px · text from ${pl.text_source||'?'} (${pl.n_text||0} lines) · ${pl.seconds} s on the server`);
@@ -1231,10 +1231,10 @@ function drawEvidence(){const f=FL[ST.fid],sc=f&&f.schema,p=sc&&activeN(f.id);if
 function renderFlab(){const f=FL[ST.fid];if(!f||f.deleted){$('#flab').innerHTML='';return;}const b=bld(f.bId),i=b.floors.indexOf(f.id),sc=f.schema;
   const FF=f.status==='read'?floorFacts(f):null,meta=FF?(FF.bad?`<span style="color:#F2B84B">⚠ Size looks wrong, areas can't be trusted</span>`:`${f1(FF.w)} × ${f1(FF.h)} m · ${FF.rooms} rooms · ${FF.doors} doors`):esc(f.file);
   $('#flab').innerHTML=`<button class="nb" data-act="fldn" title="Floor below (↓)" aria-label="Floor below" ${i<=0?'disabled':''}>${I.down}</button><div class="ft"><b>${esc(b.name)} · ${esc(fname(f))}</b><span>${meta}</span></div><button class="nb" data-act="flup" title="Floor above (↑)" aria-label="Floor above" ${i>=b.floors.length-1?'disabled':''}>${I.up}</button>`;}
-function renderVnav(){$('#vnav').innerHTML=`<button class="nb" data-act="zi" title="Zoom in" aria-label="Zoom in">${I.plus}</button><button class="nb" data-act="zo" title="Zoom out" aria-label="Zoom out">${I.minus}</button><button class="nb" data-act="fit" title="Frame the drawing (F)" aria-label="Frame">${I.fit}</button><button class="nb ${ST.trace?'on':''}" data-act="trace" title="Show what Blueline read (R)" aria-label="Show what Blueline read" aria-pressed="${ST.trace}">${I.layers}</button><button class="nb ${ST.orig?'on':''}" data-act="orig" title="Original drawing, as uploaded (O)" aria-label="Show the original drawing" aria-pressed="${ST.orig}">${I.orig}</button>`;}
+function renderVnav(){$('#vnav').innerHTML=`<button class="nb" data-act="zi" title="Zoom in" aria-label="Zoom in">${I.plus}</button><button class="nb" data-act="zo" title="Zoom out" aria-label="Zoom out">${I.minus}</button><button class="nb" data-act="fit" title="Frame the drawing (F)" aria-label="Frame">${I.fit}</button><button class="nb ${ST.trace?'on':''}" data-act="trace" title="Show what BSEARCH read (R)" aria-label="Show what BSEARCH read" aria-pressed="${ST.trace}">${I.layers}</button><button class="nb ${ST.orig?'on':''}" data-act="orig" title="Original drawing, as uploaded (O)" aria-label="Show the original drawing" aria-pressed="${ST.orig}">${I.orig}</button>`;}
 function renderLegend(){const f=FL[ST.fid],el=$('#legend');if(!f||!f.schema){el.hidden=true;return;}const p=activeN(f.id),A=ST.active;let h='';
   if(p){const tot=A.kind==='count'||A.kind==='area'?A.value:null,isA=A.unit==='m²';h=`<span class="cn"><b>${isA?f1(p.val):p.val}</b>${isA?'m²':esc(nounA(A,p.val))} on this floor${tot!=null&&A.per.length>1?` · ${isA?f1(tot)+' m²':tot} in total`:''}</span><button data-act="clearans">Clear</button>`;}
-  else if(ST.trace)h=`<span><i class="lr"></i>Rooms</span><span><i class="li"></i>Doors, windows, fixtures</span><span style="color:var(--fnt)">what Blueline read</span>`;
+  else if(ST.trace)h=`<span><i class="lr"></i>Rooms</span><span><i class="li"></i>Doors, windows, fixtures</span><span style="color:var(--fnt)">what BSEARCH read</span>`;
   else h=`<span style="color:var(--fnt)">Reading layer hidden</span><button data-act="trace">Show</button>`;
   el.innerHTML=h;el.hidden=false;}
 function renderReadBan(){const f=FL[ST.fid],el=$('#rdban');if(!f){el.hidden=true;return;}let h='',warn=false;
@@ -1648,7 +1648,7 @@ function closeModal(){$('#modal').hidden=true;$('#mbox').innerHTML='';if(DEMO.re
 function settingsModal(){const inC=!!window.claude;
   modal(`<h2>Settings</h2><p class="sub">Our model reads the floor plans. Everything after reading stays the same: answers with proof, 3D, and the trace.</p>
    <h3>Model server</h3>
-   <p class="sub">Each floor goes to <code>/api/plan</code> and comes back as a scene from <code>/api/scene</code>; a server with <code>/analyze</code> that returns a schema works too. Up to 3 floors at a time.${inC?' Inside claude.ai this page cannot call other servers: open Blueline from the model server (copy index.html into its web/ folder).':' When Blueline is served by the model server it connects by itself; otherwise the server must allow CORS.'}</p>
+   <p class="sub">Each floor goes to <code>/api/plan</code> and comes back as a scene from <code>/api/scene</code>; a server with <code>/analyze</code> that returns a schema works too. Up to 3 floors at a time.${inC?' Inside claude.ai this page cannot call other servers: open BSEARCH from the model server (copy index.html into its web/ folder).':' When BSEARCH is served by the model server it connects by itself; otherwise the server must allow CORS.'}</p>
    <div class="mrow"><input class="fld" id="ep" value="${esc(CFG.endpoint)}" aria-label="Model server address"><button class="btn sm" id="ping" type="button">Test</button></div><span id="pingr" class="asc"></span>
    <h3>Model output you already have</h3><p class="sub">No server needed: drop each plan image together with its schema JSON (same file name), or the JSON alone.</p>
    <div class="mrow"><button class="btn sm" data-act="readall">Read all floors again</button></div>
@@ -1657,9 +1657,9 @@ function settingsModal(){const inC=!!window.claude;
   const save=()=>{CFG.endpoint=($('#ep').value.trim()||CFG.endpoint).replace(/\/$/,'');store.set('bl_endpoint',CFG.endpoint);renderStatus();};
   $('#ep').onchange=save;
   $('#ping').onclick=async e=>{e.preventDefault();save();const out=$('#pingr');out.textContent='Testing…';
-    if(inC){out.textContent='claude.ai blocks calls from this page to other servers. Open Blueline from the model server instead.';return;}
+    if(inC){out.textContent='claude.ai blocks calls from this page to other servers. Open BSEARCH from the model server instead.';return;}
     const pr=await probeModel(CFG.endpoint);CFG.proto=pr;renderStatus();out.textContent=pr==='analyze'?'Connected: our reader (/analyze, /ask).':pr==='scene'?'Connected: team model (/api/plan, /api/scene).':'No model answered there. Is it running, with CORS allowed?';if(pr)pump();};}
-function helpModal(){modal(`<h2>How Blueline works</h2>
+function helpModal(){modal(`<h2>How BSEARCH works</h2>
   <ol class="steps"><li><b>Add floor plans.</b> One image per floor, or a PDF with a page per floor. Each floor becomes a card on the left. Already have model output? Drop the image with its schema JSON.</li>
    <li><b>Put them in order.</b> Drag cards up or down; the top card is the top floor. Drop a card on a building tab to move it there.</li>
    <li><b>Let it read.</b> Our model reads the floors in parallel and returns a schema: rooms, doors, windows, fixtures and the scale. Each step shows live in the trace.</li>
@@ -1679,9 +1679,9 @@ function renderStatus(){const fs=Object.values(FL).filter(f=>!f.deleted),rd=fs.f
 function renderHint(){$('#hint').textContent='';}
 function exportCSV(){const rows=[['building','floor','name','file','status','rooms','doors','windows','toilets','saunas','area_m2']];
   PROJ.buildings.forEach(b=>b.floors.forEach((id,i)=>{const f=FL[id],sc=f.schema,c=k=>sc?sc.items.filter(x=>x.kind===k).length:'';rows.push([b.name,i+1,fname(f),f.file,f.status,sc?sc.rooms.length:'',c('door'),c('window'),c('toilet'),sc?sc.rooms.filter(r=>r.type==='Sauna').length:'',sc?sc.rooms.reduce((a,r)=>a+(roomArea(sc,r)||0),0).toFixed(2):'']);}));
-  download(`blueline-quantities-${new Date().toISOString().slice(0,10)}.csv`,rows.map(r=>r.map(c=>/[",\n]/.test(String(c))?`"${String(c).replace(/"/g,'""')}"`:c).join(',')).join('\n'),'text/csv');}
+  download(`bsearch-quantities-${new Date().toISOString().slice(0,10)}.csv`,rows.map(r=>r.map(c=>/[",\n]/.test(String(c))?`"${String(c).replace(/"/g,'""')}"`:c).join(',')).join('\n'),'text/csv');}
 function exportJSON(){const strip=sc=>JSON.parse(JSON.stringify(sc,(k,v)=>k.startsWith('_')?undefined:v));
-  download(`blueline-floors-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({project:PROJ.name,buildings:PROJ.buildings.map(b=>({name:b.name,floors:b.floors.map((id,i)=>({level:i+1,name:fname(FL[id]),file:FL[id].file,schema:FL[id].schema?strip(FL[id].schema):null}))}))},null,1),'application/json');}
+  download(`bsearch-floors-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({project:PROJ.name,buildings:PROJ.buildings.map(b=>({name:b.name,floors:b.floors.map((id,i)=>({level:i+1,name:fname(FL[id]),file:FL[id].file,schema:FL[id].schema?strip(FL[id].schema):null}))}))},null,1),'application/json');}
 
 /* =====================================================================
    12. Events
@@ -1823,7 +1823,7 @@ async function renderDB(){const el=$('#dbv');if(!DB.data){el.innerHTML='<div cla
   const rooms=cad.reduce((a,p)=>a+p.rooms.length,0),projs=[...new Set(P.filter(p=>p.kind!=='scan').map(p=>p.pn))],tc={};cad.forEach(p=>p.rooms.forEach(r=>tc[r.type]=(tc[r.type]||0)+1));
   const typesSorted=Object.entries(tc).filter(([k])=>k!=='other').sort((a,b)=>b[1]-a[1]);const mx=Math.max(...typesSorted.map(x=>x[1]));
   const keep=document.activeElement&&document.activeElement.id==='dbqi',pos=keep?document.activeElement.selectionStart:0;
-  let h=`<div class="dbw"><div class="dbh"><div><h1>Drawing database</h1><p>Every drawing read once into rooms, room types, numbers, sizes and positions. Search it, open any drawing, or ask about it.</p></div><span class="sp"></span><a class="dbx" href="${esc(DB.base+'db/index.json')}" download="blueline-database.json" title="The whole database as one JSON file, ready for other software and AI agents"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Export for AI agents (JSON)</a><div class="dbseg"><button type="button" data-act="dbmode" data-m="city">Towers</button><button type="button" class="on" data-act="dbmode" data-m="list">List</button></div></div>
+  let h=`<div class="dbw"><div class="dbh"><div><h1>Drawing database</h1><p>Every drawing read once into rooms, room types, numbers, sizes and positions. Search it, open any drawing, or ask about it.</p></div><span class="sp"></span><a class="dbx" href="${esc(DB.base+'db/index.json')}" download="bsearch-database.json" title="The whole database as one JSON file, ready for other software and AI agents"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Export for AI agents (JSON)</a><div class="dbseg"><button type="button" data-act="dbmode" data-m="city">Towers</button><button type="button" class="on" data-act="dbmode" data-m="list">List</button></div></div>
   <div class="dbs"><div><b>${nf(P.length)}</b><span>Drawings</span><small>${cad.length} floor plans · ${secs.length} sections and elevations · ${scans.length} scans</small></div>
   <div><b>${nf(projs.length)}</b><span>Projects</span><small>Homes, offices, schools and apartment blocks across Europe</small></div>
   <div><b>${nf(rooms)}</b><span>Rooms found</span><small>Each with its name, number, type and place on the drawing</small></div>
@@ -1964,9 +1964,9 @@ function agentModal(){const D=DB.data;if(!D)return;DEMO.resume=DEMO.on;demoStop(
   const json=JSON.stringify(D),kb=Math.round(json.length/1024),tok=Math.round(json.length/4/1000),P=D.plans,rooms=P.reduce((a,p)=>a+p.rooms.length,0);
   const ex=P.find(p=>p.kind==='cad'&&p.rooms.length>4)||P[0],sample=JSON.stringify({id:ex.id,project:ex.pn,floor:ex.fn,scale:ex.scale?'1:'+ex.scale:null,sizeM:ex.sizeM,rooms:ex.rooms.slice(0,3).map(r=>({name:r.name,number:r.num,type:r.type,x:r.x,y:r.y}))},null,2);
   const prompt=`You have a structured database of ${nf(P.length)} construction drawings (${nf(rooms)} rooms) at:\n${full}\n\nEach plan has: id, project, floor, scale, sizeM [w,h], and rooms [{name, num, type, x, y}] where x,y are positions on the drawing (0 to 1).\nAnswer questions by querying this data, not by guessing. Always say which projects and floors an answer comes from.\n\nQuestion: `;
-  modal(`<div class="agm"><h2>Give the whole archive to an AI agent</h2><p class="lead">Agents can't read 607 messy drawings, but they can read one clean file. Blueline turns the archive into structured data an agent loads in one call, then answers about every room, floor and building, with positions as proof.</p>
+  modal(`<div class="agm"><h2>Give the whole archive to an AI agent</h2><p class="lead">Agents can't read 607 messy drawings, but they can read one clean file. BSEARCH turns the archive into structured data an agent loads in one call, then answers about every room, floor and building, with positions as proof.</p>
    <div class="agst"><div><b>1 file</b><span>instead of ${nf(P.length)} drawings</span></div><div><b>${kb} KB</b><span>about ${tok}k tokens, fits one agent context</span></div><div><b>${nf(rooms)}</b><span>rooms with name, type and position</span></div></div>
-   <div class="agrow"><a class="dbx" href="${esc(url)}" download="blueline-database.json">Download JSON</a><button type="button" class="dbx" data-copy="url">Copy data URL</button><button type="button" class="dbx" data-copy="prompt">Copy agent prompt</button></div>
+   <div class="agrow"><a class="dbx" href="${esc(url)}" download="bsearch-database.json">Download JSON</a><button type="button" class="dbx" data-copy="url">Copy data URL</button><button type="button" class="dbx" data-copy="prompt">Copy agent prompt</button></div>
    <div class="agh">What the agent sees (one floor)</div><pre class="agpre">${esc(sample)}</pre>
    <div class="agh">Prompt for any agent</div><pre class="agpre">${esc(prompt)}…</pre>
    <div class="row" style="justify-content:flex-end;display:flex"><button type="button" class="dbx" data-act="close">Close</button></div></div>`);

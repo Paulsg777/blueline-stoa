@@ -1436,7 +1436,7 @@ async function multiAnswer(pl,q,scope,ms){const subs=[];
     details:A.per.filter(p=>p.x&&p.x.rows&&p.x.rows.length).flatMap(p=>p.x.rows.map(([r,t])=>`${r.label||(RT[r.type]?RT[r.type].en:r.type)}: ${typeof t==='number'?f1(t)+' m²':t}`)).slice(0,30)}));
   try{const r=await fetch(CFG.endpoint+'/conclude',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,conclude:pl.conclude,facts})}),j=await r.json();
     if(!j.text)throw new Error(j.error||'empty');
-    c.innerHTML=`<div class="ahead"><span class="asc">${esc(scopeName(scope))}</span><span class="pill ok">From ${facts.length} measured answers</span></div><div class="atext">${esc(j.text)}</div><div class="atext asc">[1]–[${facts.length}] are the answers above, in order. ${(pl.meta.modelCalls||1)+(j.modelCalls||1)} model calls, ${(pl.meta.tokens||0)+(j.tokens||0)} tokens; every number is measured.</div>`;}
+    c.innerHTML=`<div class="ahead"><span class="asc">${esc(scopeName((subs[0]&&subs[0].scope)||scope))}</span><span class="pill ok">From ${facts.length} measured answers</span></div><div class="atext">${esc(j.text)}</div><div class="atext asc">[1]–[${facts.length}] are the answers above, in order. ${(pl.meta.modelCalls||1)+(j.modelCalls||1)} model calls, ${(pl.meta.tokens||0)+(j.tokens||0)} tokens; every number is measured.</div>`;}
   catch(e){c.innerHTML='<div class="atext">The conclusion could not be written; the measured answers are above.</div>';}
   ms.scrollTop=ms.scrollHeight;}
 async function planServer(q){await probeP;if(CFG.proto!=='analyze'||CFG.noPlan)return null;
@@ -1532,7 +1532,7 @@ function ansHTML(A){
   if(A.per.length>1){const rows=[...A.per].reverse(),mx=Math.max(1,...rows.filter(p=>!p.na).map(p=>p.val||0));
     h+=`<div class="bars">${rows.map(p=>{const f=FL[p.fid],lbl=(A.scope.type==='project'?f.bId+' · ':'')+fname(f);
       if(p.na)return`<button class="bar na" data-act="bar" data-f="${p.fid}" data-ans="${A.n}"><span class="bl">${esc(lbl)}</span><span>${f.status==='reading'||f.status==='queued'?'reading…':'not read'}</span><span class="bv">·</span></button>`;
-      return`<button class="bar ${p.fid===ST.fid&&on?'cur':''}" data-act="bar" data-f="${p.fid}" data-ans="${A.n}" title="Show ${esc(lbl)}"><span class="bl">${esc(lbl)}</span><span><i style="width:${(p.val||0)/mx*100}%;${p.dim?'opacity:.25':''}"></i></span><span class="bv">${p.val==null?'·':isA?Math.round(p.val):p.val}</span></button>`;}).join('')}</div>`;}
+      return`<button class="bar ${p.fid===ST.fid&&on?'cur':''}" data-act="bar" data-f="${p.fid}" data-ans="${A.n}" title="Show ${esc(lbl)}"><span class="bl">${esc(lbl)}</span><span><i style="width:${(p.val||0)/mx*100}%;${p.dim?'opacity:.25':''}"></i></span><span class="bv">${p.val==null?'·':isA?Math.round(p.val):Number.isInteger(p.val)?p.val:f1(p.val)}</span></button>`;}).join('')}</div>`;}
   else if(A.per[0]&&!A.per[0].na&&A.per[0].ev.length&&A.per[0].ev[0].type==='item')
     h+=`<div class="evs">${A.per[0].ev.slice(0,80).map((e,i)=>`<button class="ev" data-act="ev" data-ans="${A.n}" data-f="${A.per[0].fid}" data-ev="${e.id}" title="Zoom to ${e.id}">${i+1}</button>`).join('')}</div>`;
   h+=`<details class="how"><summary>How this was worked out</summary><div class="calc">${esc(A.calc)}</div><div class="afoot">Worked out in code in ${A.ms.toFixed(1)} ms from the floors already read. Asking costs nothing extra. <button class="alink" data-act="opentr" data-ans="${A.n}">Every step in the trace</button></div></details>

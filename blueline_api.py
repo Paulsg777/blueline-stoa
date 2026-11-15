@@ -415,7 +415,9 @@ def plan_question(q, voc):
 CONCLUDE_PROMPT = """A user asked a question about construction drawings. Code measured the facts below on the drawings; they are the
 only evidence. Answer the question in 2-4 plain sentences. Use only these facts and cite each one you use as [n]. Never add a
 number, size or rule that is not in the facts, except a standard you name as a standard (e.g. "the usual 1.5 m turning circle").
-If the facts are not enough to decide, say what is missing. Do not hedge beyond that.
+Then say in one sentence what the question depends on that these facts do not cover (for accessibility, e.g. door widths,
+thresholds and level changes), so the answer is never a bare yes for something that was not measured. If the facts are not
+enough to decide at all, say what is missing. Do not hedge beyond that.
 
 Question: {q}
 To decide: {c}

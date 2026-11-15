@@ -349,6 +349,10 @@ has ({{"kind": ..., "min": 1}} rooms containing items); where ([{{"field": "area
 do ("count", "sum_area", "max_area", "min_area"); scope ("floor" = the floor being viewed, "building", "project");
 floor (a floor number, 1 = bottom, or "top"; overrides scope); readAs (one plain sentence saying how you read the question).
 Exclusions ("all rooms except bathrooms") are written as the list of the remaining types from roomTypes.
+A word for a kind of room means every roomType it can be, because drawings label the same room differently: "bathrooms",
+"toilets", "washrooms" or "wet rooms" -> ["Bathroom","WC"] (add "Sauna","Wash" for wet rooms); "kitchens" -> ["Kitchen"];
+"offices" -> ["Office","OpenOffice"]; "corridors" -> ["Corridor","Hall","Lobby"]; "storage" -> ["Storage","Closet"].
+A tile or panel size is one area: "60 x 60 cm tiles" -> then [{{"op":"/","value":0.36,"unit":"m2"}}].
 A general word ("valves", "pressure valves", "fixtures") means the list of EVERY itemKind it covers, e.g. "pressure valves" ->
 every kind with "pressure" in its name that is a valve. Item kinds can be equipment from piping or electrical sheets.
 "Total area" / "sum of areas" -> do "sum_area". No floor mentioned -> scope "floor". "In the building" -> scope "building".
@@ -370,7 +374,7 @@ Examples:
 {{"plan": {{"find":"room","do":"max_area","floor":3,"readAs":"the largest room on floor 3"}}}}
 {{"plan": {{"find":"room","type":["Bathroom","WC"],"fit":{{"shape":"circle","d":1.5,"unit":"m","not":true}},"do":"count","readAs":"bathrooms and WCs on this floor where a 1.5 m wheelchair turning circle does not fit (0 = all pass); door widths are not checked"}}}}
 {{"plan": {{"find":"room","type":["Bedroom"],"fit":{{"shape":"rect","w":1.6,"l":2.0,"unit":"m"}},"do":"count","readAs":"bedrooms on this floor where a 1.6 x 2.0 m bed fits"}}}}
-{{"plan": {{"find":"room","type":["Bathroom"],"do":"sum_area","then":[{{"op":"/","value":0.25,"unit":"m2"}}],"round":"up","resultUnit":"tiles","readAs":"total bathroom floor area on this floor divided by 0.25 m² per tile, rounded up"}}}}
+{{"plan": {{"find":"room","type":["Bathroom","WC"],"do":"sum_area","then":[{{"op":"/","value":0.25,"unit":"m2"}}],"round":"up","resultUnit":"tiles","readAs":"total floor area of bathrooms and WCs on this floor divided by 0.25 m² per tile, rounded up"}}}}
 
 {{"plans": [{{"find":"room","type":["Bathroom","WC"],"fit":{{"shape":"circle","d":1.5,"unit":"m","not":true}},"do":"count","readAs":"bathrooms and WCs where a 1.5 m turning circle does not fit"}},
            {{"find":"room","type":["Bathroom","WC"],"do":"count","readAs":"bathrooms and WCs on this floor"}},

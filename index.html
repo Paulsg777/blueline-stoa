@@ -827,7 +827,7 @@ function failRead(f,e){if(f.deleted)return;const[msg,short]=errInfo(e);if(f.rt&&
 function tidySchema(f){const sc=f.schema,R=sc.rooms;if(R.length<2&&!sc.items.length)return;
   const W=sc.drawing.width,H=sc.drawing.height,mpp=sc.drawing.metersPerPixel,tol=mpp?.8/mpp:Math.max(W,H)*.015;
   const bb=R.map(r=>{let a=1e9,b=1e9,c=-1e9,d=-1e9;r.polygon.forEach(([x,y])=>{a=Math.min(a,x);b=Math.min(b,y);c=Math.max(c,x);d=Math.max(d,y);});return[a,b,c,d];});
-  const thin=r=>{const i=R.indexOf(r),q=bb[i],w=q[2]-q[0],h=q[3]-q[1],ar=mpp?shoelace(r.polygon)*mpp*mpp:null;return Math.max(w,h)/Math.max(1,Math.min(w,h))>10||(ar!=null&&ar<.5)||String(r.label||'').trim().split(/\s+/).length>4;}; // text boxes and notes are not rooms
+  const thin=r=>{const i=R.indexOf(r),q=bb[i],w=q[2]-q[0],h=q[3]-q[1],ar=mpp?shoelace(r.polygon)*mpp*mpp:null;return Math.max(w,h)/Math.max(1,Math.min(w,h))>10||(ar!=null&&ar<.5)||(String(r.label||'').trim().split(/\s+/).length>4&&!/\b(?:nr|no|rum|room|raum|pièce|locale|huone)\.?\s*[A-Z]?\d|\b\d{1,3}[.\-]\d{1,3}\b/i.test(String(r.label||'')));}; // text boxes and notes are not rooms; a long label with a room number ("Teknikrum + Skakt Rum nr. 208") is a room
   const par=R.map((_,i)=>i),find=i=>par[i]===i?i:(par[i]=find(par[i]));
   for(let i=0;i<R.length;i++)for(let j=i+1;j<R.length;j++){const a=bb[i],b=bb[j];if(a[0]-tol<=b[2]&&b[0]-tol<=a[2]&&a[1]-tol<=b[3]&&b[1]-tol<=a[3])par[find(i)]=find(j);}
   const tot={};R.forEach((r,i)=>{if(thin(r))return;const k=find(i);tot[k]=(tot[k]||0)+shoelace(r.polygon);});

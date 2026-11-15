@@ -427,7 +427,8 @@ def conclude(q, c, facts):
     """Write a short answer to a judgement question from facts code measured; the model reasons, it does not measure."""
     from google import genai
     from google.genai import types
-    r = genai.Client(api_key=os.environ["GEMINI_API_KEY"]).models.generate_content(
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])   # keep a reference: a client nobody holds is closed mid-call
+    r = client.models.generate_content(
         model=os.environ.get("CONCLUDE_MODEL") or os.environ.get("PERCEIVE_MODEL", "gemini-4-argon"),
         contents=[CONCLUDE_PROMPT.format(q=q, c=c, f=json.dumps(facts, ensure_ascii=False)[:8000])],
         config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0))
@@ -484,7 +485,8 @@ def verify_read(img, sch, rooms, items, ppm, perc, model=None):
     listing = json.dumps(dict(rooms=[dict(id=r["id"], label=r.get("label"), areaM2=r.get("measuredAreaM2")) for r in rooms],
                               items=[dict(id=i["id"], kind=i["kind"]) for i in items]), ensure_ascii=False)
     jpg = lambda a: types.Part.from_bytes(data=cv2.imencode(".jpg", a, [cv2.IMWRITE_JPEG_QUALITY, 90])[1].tobytes(), mime_type="image/jpeg")
-    r = genai.Client(api_key=os.environ["GEMINI_API_KEY"]).models.generate_content(
+    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])   # keep a reference: a client nobody holds is closed mid-call
+    r = client.models.generate_content(
         model=model, contents=[jpg(base), jpg(ov), VERIFY_PROMPT + listing],
         config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0))
     v = json.loads(r.text); u = getattr(r, "usage_metadata", None)

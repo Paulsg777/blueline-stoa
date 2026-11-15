@@ -1962,6 +1962,10 @@ function cityAsk(text,opt={}){text=String(text||'').trim();if(!text||!DC.slabs)r
       ${rows.slice(0,6).map((r,i)=>`<div class="dbrow" data-i="${i}"><span>${esc(r.n)}<small>${r.f} floor${r.f>1?'s':''}</small></span><i style="width:${Math.max(6,r.c/mx*100)}%"></i><em>${r.c}</em></div>`).join('')}
       <div class="agq"><b>agent</b> query(${DB.type?`type="${DB.type}"`:`text="${esc(DB.q)}"`}) <span>→ ${M.rooms} rooms · ${M.res.filter(x=>x.hits.length).length} floors · ${rows.length} buildings</span></div>
       <div class="ft"><span class="pill ok">Every room marked on its drawing</span></div>`;
+    if(!M.rooms){const aw=/\b(area|size|largest|biggest|smallest|m2|m²|square|wide|width|length|fit|wheelchair|tiles?)\b/i.test(text);
+      ans.innerHTML=`<div class="q">“${esc(text)}”</div><div class="sub" style="margin-top:6px">${aw?'The archive index holds each room’s name, number, type and position on the drawing. Areas and sizes are measured when a drawing is opened and read: click a floor to open it in Plan, then ask there.':'No room in the archive matches that. The index searches room names, numbers and types across all drawings.'}</div>
+        <div class="ft" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${['bathrooms','kitchens','stairs','offices'].map(w=>`<button class="pill" data-ask="${w}">${w}</button>`).join('')}</div>`;
+      ans.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>{const i=$('#dbqi');if(i)i.value=b.dataset.ask;cityAsk(b.dataset.ask);});return;}
     countUp($('#dbcnt'),M.rooms,900);
     if(opt.tour&&rows.length)tour(rows.slice(0,3));},650);}
 function countUp(el,n,ms){const t0=performance.now();const f=()=>{const k=Math.min(1,(performance.now()-t0)/ms);el.textContent=nf(Math.round(n*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(f);};f();}

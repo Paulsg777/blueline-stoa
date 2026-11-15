@@ -22,6 +22,8 @@ if WEIGHTS:
 for f in FILES + WEIGHTS:
     if os.path.exists(os.path.join(HERE, f)):
         image = image.add_local_file(os.path.join(HERE, f), f"/app/{f}")
+if os.path.isdir(os.path.join(HERE, "db")):                    # the page's drawing database (index.json + thumbnails)
+    image = image.add_local_dir(os.path.join(HERE, "db"), "/app/db")
 
 app = modal.App("blueline-api")
 

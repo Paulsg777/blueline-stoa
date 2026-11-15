@@ -899,6 +899,15 @@ class H(BaseHTTPRequestHandler):
         if p.endswith("/analyze") or p.endswith("/ask") or p.endswith("/plan") or p.endswith("/conclude"):
             return self._send(405, {"error": "use POST"})          # the page's probe: 405 here means "our reader, use /analyze"
         if p.endswith("/api/scene"): return self._send(404, {"error": "plan not found"})   # lets the page detect us and use /analyze
+        if p.startswith("/db/"):                                # the page's drawing database: index.json and thumbnails
+            root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db")
+            f_ = os.path.realpath(os.path.join(root, p[len("/db/"):]))
+            if f_.startswith(os.path.realpath(root) + os.sep) and os.path.isfile(f_):
+                ctype = {".json": "application/json", ".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml"}.get(os.path.splitext(f_)[1].lower(), "application/octet-stream")
+                b = open(f_, "rb").read()
+                self.send_response(200); self.send_header("Content-Type", ctype); self.send_header("Cache-Control", "public, max-age=3600")
+                self.send_header("Content-Length", str(len(b))); self.end_headers(); return self.wfile.write(b)
+            return self._send(404, {"error": "not found"})
         if p in ("", "/index.html"):                            # serve the frontend itself: one URL for page + reader
             page = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
             if os.path.exists(page):

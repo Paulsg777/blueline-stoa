@@ -854,6 +854,11 @@ function parseQ(raw){
       .replace(/\b(on|in|of) (this|the) (floor plan|floor|plan|drawing|sheet|building|project|whole building)\b|\bin total\b|\b(on )?(floor|level) \d+\b|\bin building [a-z]\b|\b(across|in) the (whole )?project\b|\ball floors\b|\bwhich (floor|level|storey|building)\b|\bwhich is the\b|\b(have|has|with) (a |an |their own |own )?sauna\b|\bhow many\b|\bare there\b|\bis there\b/g,' ');
     const ex=core.match(/\b(in|inside|within|with|without|per|each|larger|smaller|bigger|greater|more than|less than|over|under|at least|at most|between|except|excluding|not|than|near|next to|adjacent|connected|and|or|both|only)\b/g);
     P.strong=!ex;P.extra=ex?[...new Set(ex)]:null;}
+  if(P.strong&&P.lang==='English'&&P.hit){ // a rule answers only if it understands every word: anything else ("wheelchair friendly", "fit") goes to the planner
+    const OK=new Set('a an the of in on at to is are there be how many much what which number count total all any do does this that these those floor floors plan plans drawing drawings sheet level storey building buildings project whole here it its me show tell give list find number amount please area areas size sizes net gross square m2 m² metres meters sqm largest smallest biggest room rooms their combined sum'.split(' '));
+    const left=s.replace(P.hit.toLowerCase(),' ').split(' ').filter(w=>w&&!OK.has(w)&&!/^\d+$/.test(w)&&!(P.hit||'').toLowerCase().includes(w));
+    if(left.length){P.strong=false;P.extra=left.slice(0,4);}}
+  if(!P.t&&!P.tag)P.strong=false; // no rule recognises it: let the planner read it before asking the model
   if(P.t&&P.t.units&&/sauna/.test(s))P.withSauna=true;
   if(!P.t&&(P.area||P.largest||P.smallest)){P.t={allRooms:true};P.why='rooms';}
   P.tag=(raw.match(/\b[A-Z]{1,5}-\d{1,4}[A-Z]?\b/)||[])[0]||null; // tagged objects such as PS-12 live in the sheet's text, not in the schema
@@ -1363,17 +1368,31 @@ async function ask(q,scope){q=q.trim();if(!q)return;const ms=$('#msgs');ms.query
   const u=document.createElement('div');u.className='uq';u.textContent=q;ms.appendChild(u);scope=scope||ST.scope;
   const P=parseQ(q);let A=null;
   if(!P.strong||P.unsupported){const wait=document.createElement('div');wait.className='ans';wait.innerHTML='<div class="atext asc">Reading the question…</div>';ms.appendChild(wait);ms.scrollTop=ms.scrollHeight;
-    const pl=await planServer(q);wait.remove();if(pl)A=runPlan(pl.plan,q,scope,pl.meta);}
+    const pl=await planServer(q);wait.remove();if(pl&&pl.plans){await multiAnswer(pl,q,scope,ms);return;}if(pl)A=runPlan(pl.plan,q,scope,pl.meta);}
   if(!A){A=answer(q,scope);if(A.kind!=='nope'&&!A.P.strong){const rule=A.P.rule;A={...A,kind:'nope',per:[],value:null,text:`I can only read this as “${rule}”, which would ignore “${A.P.extra.join('”, “')}”. Ask it more simply, or the model will plan it once it is connected.`};A.steps=A.steps.filter(x=>x.k==='parse_question'||x.k==='cost');A.steps[0]={...A.steps[0],s:'warn',d:`${rule}, but the question also says “${A.P.extra.join('”, “')}”, which this rule cannot handle`};}}
   ANS[A.n]=A;ST.trN=A.n;const d=document.createElement('div');d.className='ans';d.dataset.n=A.n;ms.appendChild(d);
   if(A.kind!=='nope')activate(A.n);else{d.innerHTML=ansHTML(A);if(!A.planned)askServer(A,d);}ms.scrollTop=ms.scrollHeight;if(ST.trOpen)setTrace(null,'answer');}
 /* our model turns the question into a plan (see PLAN_API.md); nothing is answered by the model itself */
+/* a judgement question ("is this floor wheelchair friendly?"): the planner splits it into measured sub-questions, each is
+   run in code and marked like any answer, then our model writes a short conclusion that may only use those results */
+async function multiAnswer(pl,q,scope,ms){const subs=[];
+  for(const p of pl.plans){const A=runPlan(p,q,scope,pl.meta);ANS[A.n]=A;ST.trN=A.n;const d=document.createElement('div');d.className='ans';d.dataset.n=A.n;ms.appendChild(d);
+    if(A.kind!=='nope')activate(A.n);else d.innerHTML=ansHTML(A);subs.push(A);}
+  const c=document.createElement('div');c.className='ans';c.innerHTML='<div class="atext asc">Weighing the measured answers…</div>';ms.appendChild(c);ms.scrollTop=ms.scrollHeight;
+  const facts=subs.map((A,i)=>({n:i+1,measured:(A.planned&&A.planned.readAs)||'',value:A.kind==='nope'?null:A.value,unit:A.unit||(A.noun?A.noun[1]:''),note:A.kind==='nope'?(A.text||''):undefined,
+    details:A.per.filter(p=>p.x&&p.x.rows&&p.x.rows.length).flatMap(p=>p.x.rows.map(([r,t])=>`${r.label||(RT[r.type]?RT[r.type].en:r.type)}: ${typeof t==='number'?f1(t)+' m²':t}`)).slice(0,30)}));
+  try{const r=await fetch(CFG.endpoint+'/conclude',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,conclude:pl.conclude,facts})}),j=await r.json();
+    if(!j.text)throw new Error(j.error||'empty');
+    c.innerHTML=`<div class="ahead"><span class="asc">${esc(scopeName(scope))}</span><span class="pill ok">From ${facts.length} measured answers</span></div><div class="atext">${esc(j.text)}</div><div class="atext asc">[1]–[${facts.length}] are the answers above, in order. ${(pl.meta.modelCalls||1)+(j.modelCalls||1)} model calls, ${(pl.meta.tokens||0)+(j.tokens||0)} tokens; every number is measured.</div>`;}
+  catch(e){c.innerHTML='<div class="atext">The conclusion could not be written; the measured answers are above.</div>';}
+  ms.scrollTop=ms.scrollHeight;}
 async function planServer(q){await probeP;if(CFG.proto!=='analyze'||CFG.noPlan)return null;
   const fl=Object.values(FL).filter(f=>!f.deleted&&isRead(f)),voc={itemKinds:[...new Set([...Object.keys(KIND),...fl.flatMap(f=>((f.schema&&f.schema.items)||[]).map(i=>i.kind).filter(Boolean))])].slice(0,300),roomTypes:Object.keys(RT),labels:[...new Set(fl.flatMap(f=>f.schema.rooms.map(r=>r.label).filter(Boolean)))].slice(0,200),apartments:[...new Set(fl.flatMap(f=>unitsOf(f.schema)))].slice(0,100),floors:curB().floors.length};
   const t0=performance.now(),ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),8000);
   try{const r=await fetch(CFG.endpoint+'/plan',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,vocabulary:voc}),signal:ctl.signal});
     if(r.status===404||r.status===405){CFG.noPlan=true;return null;}if(!r.ok)return null;const j=await r.json();
-    return j&&j.plan&&(j.plan.find==='item'||j.plan.find==='room')?{plan:j.plan,meta:{ms:performance.now()-t0,modelCalls:j.modelCalls??1,tokens:j.tokens??null}}:null;}
+    const meta={ms:performance.now()-t0,modelCalls:j.modelCalls??1,tokens:j.tokens??null};if(j&&Array.isArray(j.plans)&&j.plans.length>=2)return{plans:j.plans,conclude:j.conclude||'',meta};
+    return j&&j.plan&&(j.plan.find==='item'||j.plan.find==='room')?{plan:j.plan,meta}:null;}
   catch(e){return null;}finally{clearTimeout(tm);}}
 /* fit check: rasterise a room at ~5 cm, then a circle fits if the free distance reaches its radius, a w x l rectangle if
    a window of that size (either orientation) lies wholly inside. Axis-aligned placement only. */

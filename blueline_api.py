@@ -358,6 +358,9 @@ code measures it on each room's outline. Use the user's sizes; for accessibility
 Arithmetic on the result (tiles, paint, cost ...): then ([{{"op": "/"|"*"|"+"|"-", "value": number exactly as the user wrote it,
 "unit": "m2"|"cm2"|"mm2"|"ft2"|"m"|"cm"|"mm"|"ft"|null}}], applied in order; code converts the units); round ("up"|"down"|"nearest");
 resultUnit (plural noun for the result, e.g. "tiles"). Keep the user's numbers and units exactly, even if they look odd.
+A question that needs a judgement (is it suitable, compliant, accessible, better; compare floors) is answered from several
+measured facts: return {{"plans": [plan, ...] (2-5 plans, each with its own readAs), "conclude": "what to decide from them, one sentence"}}
+instead of one plan. Only measurable facts go in plans; the conclusion is written later from their results.
 If the question cannot be expressed with these fields, return {{"plan": null}}.
 
 Examples:
@@ -369,8 +372,17 @@ Examples:
 {{"plan": {{"find":"room","type":["Bedroom"],"fit":{{"shape":"rect","w":1.6,"l":2.0,"unit":"m"}},"do":"count","readAs":"bedrooms on this floor where a 1.6 x 2.0 m bed fits"}}}}
 {{"plan": {{"find":"room","type":["Bathroom"],"do":"sum_area","then":[{{"op":"/","value":0.25,"unit":"m2"}}],"round":"up","resultUnit":"tiles","readAs":"total bathroom floor area on this floor divided by 0.25 m² per tile, rounded up"}}}}
 
+{{"plans": [{{"find":"room","type":["Bathroom","WC"],"fit":{{"shape":"circle","d":1.5,"unit":"m","not":true}},"do":"count","readAs":"bathrooms and WCs where a 1.5 m turning circle does not fit"}},
+           {{"find":"room","type":["Bathroom","WC"],"do":"count","readAs":"bathrooms and WCs on this floor"}},
+           {{"find":"item","kind":"door","do":"count","readAs":"doors on this floor"}}],
+ "conclude": "whether this floor's bathrooms give a wheelchair user room to turn"}}
+{{"plans": [{{"find":"room","type":["Bedroom"],"do":"count","readAs":"bedrooms on this floor"}},
+           {{"find":"room","type":["Bathroom","WC"],"do":"count","readAs":"bathrooms and WCs on this floor"}},
+           {{"find":"room","do":"sum_area","readAs":"total room area on this floor"}}],
+ "conclude": "whether this floor suits a family of four"}}
+
 Question: {q}
-Return JSON only: {{"plan": {{...}}}} or {{"plan": null}}."""
+Return JSON only: {{"plan": {{...}}}}, {{"plans": [...], "conclude": "..."}} or {{"plan": null}}."""
 
 
 def plan_question(q, voc):
@@ -382,17 +394,48 @@ def plan_question(q, voc):
                                        config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0))
     j = json.loads(r.text); u = getattr(r, "usage_metadata", None)
     tok = sum((getattr(u, k, 0) or 0) for k in ("prompt_token_count", "candidates_token_count", "thoughts_token_count")) if u else 0
-    plan = j.get("plan") if isinstance(j, dict) else None
-    if plan is not None and plan.get("find") not in ("item", "room"): plan = None
-    if plan:                                                # keep only vocabulary values: the page must be able to run it
-        rt = set(voc.get("roomTypes") or []); ik = set(voc.get("itemKinds") or [])
+    rt = set(voc.get("roomTypes") or []); ik = set(voc.get("itemKinds") or [])
+
+    def clean(plan):                                        # keep only vocabulary values: the page must be able to run it
+        if not isinstance(plan, dict) or plan.get("find") not in ("item", "room"): return None
         for k_, allowed in (("type", rt), ("kind", ik)):
             if plan.get(k_) is not None and allowed:
                 v = plan[k_] if isinstance(plan[k_], list) else [plan[k_]]
                 v = [x for x in v if x in allowed]
                 plan[k_] = v if len(v) != 1 else v[0]
                 if not v: plan.pop(k_)
-    return dict(plan=plan, modelCalls=1, tokens=tok)
+        return plan
+    j = j if isinstance(j, dict) else {}
+    plans = [p for p in (clean(p) for p in (j.get("plans") or [])[:5]) if p]
+    if len(plans) >= 2:
+        return dict(plan=None, plans=plans, conclude=str(j.get("conclude") or "")[:300], modelCalls=1, tokens=tok)
+    return dict(plan=clean(j.get("plan")), modelCalls=1, tokens=tok)
+
+
+CONCLUDE_PROMPT = """A user asked a question about construction drawings. Code measured the facts below on the drawings; they are the
+only evidence. Answer the question in 2-4 plain sentences. Use only these facts and cite each one you use as [n]. Never add a
+number, size or rule that is not in the facts, except a standard you name as a standard (e.g. "the usual 1.5 m turning circle").
+If the facts are not enough to decide, say what is missing. Do not hedge beyond that.
+
+Question: {q}
+To decide: {c}
+Facts (JSON): {f}
+Return JSON only: {{"text": "..."}}"""
+
+
+def conclude(q, c, facts):
+    """Write a short answer to a judgement question from facts code measured; the model reasons, it does not measure."""
+    from google import genai
+    from google.genai import types
+    r = genai.Client(api_key=os.environ["GEMINI_API_KEY"]).models.generate_content(
+        model=os.environ.get("CONCLUDE_MODEL") or os.environ.get("PERCEIVE_MODEL", "gemini-4-argon"),
+        contents=[CONCLUDE_PROMPT.format(q=q, c=c, f=json.dumps(facts, ensure_ascii=False)[:8000])],
+        config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0))
+    u = getattr(r, "usage_metadata", None)
+    tok = sum((getattr(u, k, 0) or 0) for k in ("prompt_token_count", "candidates_token_count", "thoughts_token_count")) if u else 0
+    try: text = str(json.loads(r.text).get("text") or "")
+    except Exception: text = r.text
+    return dict(text=text[:1500], modelCalls=1, tokens=tok)
 
 
 VERIFY_PROMPT = """You are checking another reader's work on an architectural floor plan.
@@ -849,6 +892,8 @@ class H(BaseHTTPRequestHandler):
     def do_GET(self):
         p = self.path.split("?")[0].rstrip("/")
         if p.endswith("/health"): return self._send(200, {"ok": True, "reader": "blueline-deterministic"})
+        if p.endswith("/analyze") or p.endswith("/ask") or p.endswith("/plan") or p.endswith("/conclude"):
+            return self._send(405, {"error": "use POST"})          # the page's probe: 405 here means "our reader, use /analyze"
         if p.endswith("/api/scene"): return self._send(404, {"error": "plan not found"})   # lets the page detect us and use /analyze
         if p in ("", "/index.html"):                            # serve the frontend itself: one URL for page + reader
             page = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
@@ -866,6 +911,12 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, plan_question(str(body.get("question", ""))[:500], body.get("vocabulary") or {}))
             except Exception as e:
                 traceback.print_exc(); return self._send(200, {"plan": None, "modelCalls": 1, "tokens": 0, "error": repr(e)[:200]})
+        if p.endswith("/conclude"):                                 # several measured answers -> a short reasoned answer
+            try:
+                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)) or b"{}")
+                return self._send(200, conclude(str(body.get("question", ""))[:500], str(body.get("conclude", ""))[:300], body.get("facts") or []))
+            except Exception as e:
+                traceback.print_exc(); return self._send(200, {"text": "", "modelCalls": 1, "tokens": 0, "error": repr(e)[:200]})
         if not (p.endswith("/analyze") or p.endswith("/ask")):      # e.g. /api/plan: answer 404 at once, the page falls back to /analyze
             self.rfile.read(int(self.headers.get("Content-Length", 0) or 0)); return self._send(404, {"error": "not found"})
         try:

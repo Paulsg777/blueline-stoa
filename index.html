@@ -1375,6 +1375,24 @@ async function planServer(q){await probeP;if(CFG.proto!=='analyze'||CFG.noPlan)r
     if(r.status===404||r.status===405){CFG.noPlan=true;return null;}if(!r.ok)return null;const j=await r.json();
     return j&&j.plan&&(j.plan.find==='item'||j.plan.find==='room')?{plan:j.plan,meta:{ms:performance.now()-t0,modelCalls:j.modelCalls??1,tokens:j.tokens??null}}:null;}
   catch(e){return null;}finally{clearTimeout(tm);}}
+/* fit check: rasterise a room at ~5 cm, then a circle fits if the free distance reaches its radius, a w x l rectangle if
+   a window of that size (either orientation) lies wholly inside. Axis-aligned placement only. */
+function fitRoom(poly,mpp,fit,u){if(!poly||poly.length<3)return null;
+  const xs=poly.map(p=>p[0]),ys=poly.map(p=>p[1]),x0=Math.min(...xs),y0=Math.min(...ys),bw=(Math.max(...xs)-x0)*mpp,bh=(Math.max(...ys)-y0)*mpp;
+  let res=0.05;while(bw/res*bh/res>250000)res*=1.25;const nx=Math.max(1,Math.ceil(bw/res)),ny=Math.max(1,Math.ceil(bh/res)),G=new Uint8Array(nx*ny);
+  for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)G[j*nx+i]=inPoly([x0+(i+.5)*res/mpp,y0+(j+.5)*res/mpp],poly)?1:0;
+  if(fit.shape==='circle'){const d=(+fit.d)*u;if(!(d>0))return null;const D=new Float32Array(nx*ny),INF=1e9,a=1,b=Math.SQRT2;
+    for(let k=0;k<nx*ny;k++)D[k]=G[k]?INF:0;
+    const at=(i,j)=>i<0||j<0||i>=nx||j>=ny?0:D[j*nx+i];
+    for(let j=0;j<ny;j++)for(let i=0;i<nx;i++){const k=j*nx+i;if(!D[k])continue;D[k]=Math.min(D[k],at(i-1,j)+a,at(i,j-1)+a,at(i-1,j-1)+b,at(i+1,j-1)+b);}
+    for(let j=ny-1;j>=0;j--)for(let i=nx-1;i>=0;i--){const k=j*nx+i;if(!D[k])continue;D[k]=Math.min(D[k],at(i+1,j)+a,at(i,j+1)+a,at(i+1,j+1)+b,at(i-1,j+1)+b);}
+    let m=0;for(let k=0;k<nx*ny;k++)if(D[k]>m)m=D[k];const free=2*(m-0.5)*res;
+    return{ok:free>=d,txt:`${free>=d?'fits':'does not fit'} (largest free circle ${f1(Math.max(0,free))} m, needs ${f1(d)} m)`};}
+  const w=(+fit.w)*u,l=(+fit.l)*u;if(!(w>0&&l>0))return null;
+  const I=new Int32Array((nx+1)*(ny+1));for(let j=0;j<ny;j++)for(let i=0;i<nx;i++)I[(j+1)*(nx+1)+i+1]=G[j*nx+i]+I[j*(nx+1)+i+1]+I[(j+1)*(nx+1)+i]-I[j*(nx+1)+i];
+  const fits=(kw,kh)=>{if(kw>nx||kh>ny)return false;for(let j=0;j+kh<=ny;j++)for(let i=0;i+kw<=nx;i++){const s2=I[(j+kh)*(nx+1)+i+kw]-I[j*(nx+1)+i+kw]-I[(j+kh)*(nx+1)+i]+I[j*(nx+1)+i];if(s2===kw*kh)return true;}return false;};
+  const kw=Math.ceil(w/res),kl=Math.ceil(l/res),ok=fits(kw,kl)||fits(kl,kw);
+  return{ok,txt:`${ok?'fits':'does not fit'} (${f1(w)} × ${f1(l)} m)`};}
 function runPlan(pl,q,scope0,meta){const t0=performance.now(),A={n:++QN,q,P:{t:{},kind:'count',rule:pl.readAs||'',strong:true},scope:scope0,rv:++RV,per:[],missing:[],steps:[],planned:pl};
   const S=(k,d,x)=>A.steps.push(Object.assign({k,d,s:'ok'},x||{})),arr=v=>v==null?[]:Array.isArray(v)?v:[v],I=pl.in||{},kinds=arr(pl.kind).map(k=>FIXK[k]||k),types=arr(pl.type),op=pl.do||'count';
   const where=arr(pl.where).filter(w=>w&&w.field==='area'&&['>','>=','<','<=','='].includes(w.op)&&isFinite(+w.value));
@@ -1391,6 +1409,12 @@ function runPlan(pl,q,scope0,meta){const t0=performance.now(),A={n:++QN,q,P:{t:{
     let rs=sc2.rooms.filter(r=>(!types.length||roomIs(r,types))&&(!pl.label||normL(r.label)===normL(pl.label))&&inRoom(sc2,r));
     if(pl.has){const hk=arr(pl.has.kind).map(k=>FIXK[k]||k),mn=+pl.has.min||1;rs=rs.filter(r=>sc2.items.filter(i=>hk.includes(i.kind)&&(i.roomIds||[]).includes(r.id)).length>=mn);}
     const ar=rs.map(r=>[r,roomArea(sc2,r)]);if(where.length)rs=ar.filter(([,a])=>a!=null&&where.every(w=>cmp(a,w))).map(([r])=>r);
+    if(pl.fit){ // does a shape of a given size fit in each room? measured on the room outline at the drawing scale
+      const mpp=sc2.drawing.metersPerPixel;if(!mpp)return{fid:f.id,val:null,ev:[],noScale:true,x};
+      const FU={m:1,cm:0.01,mm:0.001,ft:0.3048,in:0.0254},u=FU[pl.fit.unit]!=null?FU[pl.fit.unit]:1,want=!pl.fit.not,keep=[];
+      rs.forEach(r=>{const t=fitRoom(r.polygon,mpp,pl.fit,u);if(t==null)return;x.rows.push([r,t.txt]);if(t.ok===want)keep.push(r);});
+      S('fit_check',`${fls.length>1?fname(f)+': ':''}${x.rows.map(([r,t])=>`${r.label||RT[r.type].en} ${t}`).slice(0,12).join(' · ')}`);
+      rs=keep;}
     if(isArea){let q2=rs.map(r=>[r,roomArea(sc2,r)]);if(q2.some(z=>z[1]==null))return{fid:f.id,val:null,ev:[],noScale:true,x};if(op!=='sum_area'&&q2.length){q2.sort((a,c)=>op==='min_area'?a[1]-c[1]:c[1]-a[1]);q2=[q2[0]];x.room=q2[0][0];}
       q2.forEach(([r,a])=>{ev.push({id:r.id,type:'room'});x.rows.push([r,a]);if(r.measuredAreaM2!=null||r.printedAreaM2!=null)x.np++;else x.nt++;});return{fid:f.id,val:q2.reduce((s3,z)=>s3+z[1],0),ev,x};}
     rs.forEach(r=>ev.push({id:r.id,type:'room'}));return{fid:f.id,val:rs.length,ev,x};});

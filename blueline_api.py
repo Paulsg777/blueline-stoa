@@ -23,7 +23,7 @@ import numpy as np, cv2
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ask, schematic, arcs
 
-READER_VERSION = "perceive+measure+check v15"     # part of the cache key: a new reader version never reuses old reads
+READER_VERSION = "perceive+measure+check v16"     # part of the cache key: a new reader version never reuses old reads
 CACHE_DIR = os.environ.get("READ_CACHE", "read_cache")
 
 # room label words (several languages) -> the frontend's room types
@@ -165,10 +165,11 @@ def rooms_from_interior(img, sch, perc, ppm):
         if len(q) == 4 and q[2] > q[0] and q[3] > q[1]: bb = [q[0] * W / 1000, q[1] * H / 1000, q[2] * W / 1000, q[3] * H / 1000]
     except Exception:
         bb = None
-    if bb is None and len(pts) >= 2:
+    if len(pts) >= 2:                                       # the box always holds every room the model listed
         xs_, ys_ = [p[0] for p in pts], [p[1] for p in pts]
         mx_, my_ = 0.15 * (max(xs_) - min(xs_)) + 0.03 * W, 0.15 * (max(ys_) - min(ys_)) + 0.03 * H
-        bb = [min(xs_) - mx_, min(ys_) - my_, max(xs_) + mx_, max(ys_) + my_]
+        pb = [min(xs_) - mx_, min(ys_) - my_, max(xs_) + mx_, max(ys_) + my_]
+        bb = pb if bb is None else [min(bb[0], pb[0]), min(bb[1], pb[1]), max(bb[2], pb[2]), max(bb[3], pb[3])]
     if bb is not None:
         m_ = int(0.015 * max(H, W))                         # the model's box is approximate: keep a margin
         x0b, y0b = max(0, int(bb[0]) - m_), max(0, int(bb[1]) - m_)
@@ -351,6 +352,9 @@ Exclusions ("all rooms except bathrooms") are written as the list of the remaini
 A general word ("valves", "pressure valves", "fixtures") means the list of EVERY itemKind it covers, e.g. "pressure valves" ->
 every kind with "pressure" in its name that is a valve. Item kinds can be equipment from piping or electrical sheets.
 "Total area" / "sum of areas" -> do "sum_area". No floor mentioned -> scope "floor". "In the building" -> scope "building".
+Will something fit in rooms (furniture, equipment, a wheelchair turning circle): fit ({{"shape": "rect", "w": number, "l": number,
+"unit": "m"|"cm"|"mm"|"ft"|"in"}} or {{"shape": "circle", "d": number, "unit": ...}}, "not": true to find the rooms where it does NOT fit);
+code measures it on each room's outline. Use the user's sizes; for accessibility use the standard 1.5 m turning circle and say so in readAs.
 Arithmetic on the result (tiles, paint, cost ...): then ([{{"op": "/"|"*"|"+"|"-", "value": number exactly as the user wrote it,
 "unit": "m2"|"cm2"|"mm2"|"ft2"|"m"|"cm"|"mm"|"ft"|null}}], applied in order; code converts the units); round ("up"|"down"|"nearest");
 resultUnit (plural noun for the result, e.g. "tiles"). Keep the user's numbers and units exactly, even if they look odd.
@@ -361,6 +365,8 @@ Examples:
 {{"plan": {{"find":"room","where":[{{"field":"area","op":">","value":15}}],"do":"count","readAs":"count rooms over 15 m², on this floor"}}}}
 {{"plan": {{"find":"room","type":["Living","Bedroom","Kitchen","Hall","Corridor"],"do":"sum_area","readAs":"total area of all rooms except bathrooms and WCs, on this floor"}}}}
 {{"plan": {{"find":"room","do":"max_area","floor":3,"readAs":"the largest room on floor 3"}}}}
+{{"plan": {{"find":"room","type":["Bathroom","WC"],"fit":{{"shape":"circle","d":1.5,"unit":"m","not":true}},"do":"count","readAs":"bathrooms and WCs on this floor where a 1.5 m wheelchair turning circle does not fit (0 = all pass); door widths are not checked"}}}}
+{{"plan": {{"find":"room","type":["Bedroom"],"fit":{{"shape":"rect","w":1.6,"l":2.0,"unit":"m"}},"do":"count","readAs":"bedrooms on this floor where a 1.6 x 2.0 m bed fits"}}}}
 {{"plan": {{"find":"room","type":["Bathroom"],"do":"sum_area","then":[{{"op":"/","value":0.25,"unit":"m2"}}],"round":"up","resultUnit":"tiles","readAs":"total bathroom floor area on this floor divided by 0.25 m² per tile, rounded up"}}}}
 
 Question: {q}

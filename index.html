@@ -1403,16 +1403,16 @@ function sync3D(){if(!T3.ok)return;const b=curB(),bs=PROJ.buildings.filter(x=>x.
   for(const[fid,G]of T3.G)if(!ids.has(fid)){T3.root.remove(G.g);disposeObj(G.g);T3.G.delete(fid);}
   // every building gets its own lot along x, wide enough for its largest floor, with a street between them
   const lots=bs.map(x=>{const gs=x.floors.map(fid=>build3DFloor(FL[fid]));return{b:x,gs,w:Math.max(8,...gs.map(G=>G.w))};}),GAPX=10,tot=lots.reduce((a,l)=>a+l.w,0)+GAPX*Math.max(0,lots.length-1);
-  let x0=-tot/2;lots.forEach(l=>{const cx=x0+l.w/2;x0+=l.w+GAPX;l.cx=cx;T3.bx=T3.bx||{};T3.bx[l.b.id]=cx;
-    l.b.floors.forEach((fid,i)=>{const G=T3.G.get(fid);G.bId=l.b.id;G.ty=i*FH*(1+T3.spread*2);if(G.y==null){G.y=G.ty;G.g.position.y=G.y;}G.g.position.x=cx;G.cur=l.b.id===b.id;G.g.visible=T3.iso?fid===ST.fid:true;});});
+  const lvl=Math.max(0,b.floors.indexOf(ST.fid));let x0=-tot/2;lots.forEach(l=>{const cx=x0+l.w/2;x0+=l.w+GAPX;l.cx=cx;T3.bx=T3.bx||{};T3.bx[l.b.id]=cx;
+    l.b.floors.forEach((fid,i)=>{const G=T3.G.get(fid);G.bId=l.b.id;G.ty=i*FH*(1+T3.spread*2);if(G.y==null){G.y=G.ty;G.g.position.y=G.y;}G.g.position.x=cx;G.cur=l.b.id===b.id;G.g.visible=T3.iso?(l.b.id===b.id?fid===ST.fid:i===Math.min(lvl,l.b.floors.length-1)):true;});});
   T3.lots=lots;
   pins3D();paint3D();labels3D(true);roomLabels3D();if(T3.on&&!T3.framed&&b.floors.length){frame3D(false);T3.framed=true;}
   $('#hint3').innerHTML='';}
 function paint3D(){if(!T3.ok)return;for(const[fid,G]of T3.G){const sel=fid===ST.fid,hov=fid===T3.hover||fid===T3.hoverList;
-  const oth=G.cur===false;G.mW.color.setHex(sel?0xF4F7FF:hov?0xD8E4FA:oth?0x8E8E8E:0xB8B8B8);G.mE.opacity=sel?.95:hov?.85:oth?.14:.28;G.mE.color.setHex(sel||hov?0x8DB6FF:0x5B95FF);G.mP.opacity=sel?1:oth?.6:.82;}}
-function pins3D(){if(!T3.ok)return;const THREE=T3.THREE,A=ST.active,key=(A?A.n+':'+A.rv:'none')+':'+ST.fid;
+  const oth=G.cur===false,ans=!!(ST.active&&activeN(fid)&&activeN(fid).ev.length);G.mW.color.setHex(sel?0xF4F7FF:hov?0xD8E4FA:ans?0xD6E2F8:oth?0x8E8E8E:0xB8B8B8);G.mE.opacity=sel?.95:hov?.85:ans?.8:oth?.14:.28;G.mE.color.setHex(sel||hov||ans?0x8DB6FF:0x5B95FF);G.mP.opacity=sel?1:oth?.6:.82;}}
+function pins3D(){if(!T3.ok)return;const THREE=T3.THREE,A=ST.active,key=(A?A.n+':'+A.rv:'none');
   for(const[fid,G]of T3.G){if(G.pinKey===key)continue;G.pinKey=key;G.pins.children.slice().forEach(o=>{G.pins.remove(o);disposeObj(o);});
-    const p=A&&fid===ST.fid?activeN(fid):null,f=FL[fid];if(!p||!p.ev.length||!f.schema)continue;const sc=f.schema,mpp=G.mpp;
+    const p=A?activeN(fid):null,f=FL[fid];if(!p||!p.ev.length||!f.schema)continue;const sc=f.schema,mpp=G.mpp;
     const its=p.ev.filter(e=>e.type==='item').map(e=>sc.items.find(i=>i.id===e.id)).filter(Boolean);
     if(its.length){const a=new THREE.InstancedMesh(T3.gPin,T3.mPin,its.length),b=new THREE.InstancedMesh(T3.gHead,T3.mPin,its.length),M=new THREE.Matrix4();
       its.forEach((it,i)=>{const x=(it.box[0]+it.box[2])/2*mpp-G.ox,z=(it.box[1]+it.box[3])/2*mpp-G.oz;M.makeRotationX(-Math.PI/2).setPosition(x,.05,z);a.setMatrixAt(i,M);M.makeTranslation(x,1.1,z);b.setMatrixAt(i,M);});a.renderOrder=b.renderOrder=5;
@@ -1420,14 +1420,14 @@ function pins3D(){if(!T3.ok)return;const THREE=T3.THREE,A=ST.active,key=(A?A.n+'
     p.ev.filter(e=>e.type==='room').forEach(e=>{const r=sc.rooms.find(x=>x.id===e.id);if(!r)return;const sh=new THREE.Shape(r.polygon.map(q=>new THREE.Vector2(q[0]*mpp-G.ox,-(q[1]*mpp-G.oz))));
       const m=new THREE.Mesh(new THREE.ShapeGeometry(sh),T3.mRoom);m.rotation.x=-Math.PI/2;m.position.y=.06;G.pins.add(m);});}}
 function labels3D(rebuild){if(!T3.ok)return;const box=$('#lbl3'),b=curB(),bs=PROJ.buildings.filter(x=>x.floors.length),n=b.floors.length+(bs.length>1?bs.length:0);
-  if(rebuild||box.children.length!==n)box.innerHTML=b.floors.map(fid=>`<button class="l3" data-act="sel3" data-f="${fid}"></button>`).join('')+(bs.length>1?bs.map(x=>`<button class="l3 lb ${x.id===b.id?'on':''}" data-act="selb3" data-b="${x.id}"><span>${esc(x.name)}</span><b>${x.floors.length}</b></button>`).join(''):'');
+  if(rebuild||box.children.length!==n)box.innerHTML=b.floors.map(fid=>`<button class="l3" data-act="sel3" data-f="${fid}"></button>`).join('')+(bs.length>1?bs.map(x=>{const tot=ST.active?x.floors.reduce((a,fid)=>{const p=activeN(fid);return a+(p?(+p.val||0):0);},0):null;return`<button class="l3 lb ${x.id===b.id?'on':''}" data-act="selb3" data-b="${x.id}"><span>${esc(x.name)}</span><b>${tot!=null?fmtBadge(tot):x.floors.length+(x.floors.length===1?' floor':' floors')}</b></button>`;}).join(''):'');
   b.floors.forEach(fid=>{const el=box.querySelector(`[data-f="${fid}"]`);if(!el)return;const f=FL[fid],p=activeN(fid);
     el.innerHTML=`<span class="st ${f.status}"></span><span>${esc(fname(f))}</span>${p?`<b>${fmtBadge(p.val)}</b>`:''}`;el.classList.toggle('on',fid===ST.fid);el.classList.toggle('hv',fid===T3.hover);});}
 function roomLabels3D(){const box=$('#rlbl3');if(!box)return;box.innerHTML='';return;const G=T3.ok&&T3.iso?T3.G.get(ST.fid):null,k=G?ST.fid+':'+G.key:'';if(box.dataset.k===k)return;box.dataset.k=k;
   box.innerHTML=G?G.rl.map(r=>`<span class="rl">${esc(r.t)}${r.a?` <i>${r.a}</i>`:''}</span>`).join(''):'';}
 function placeLabels(){const box=$('#lbl3'),w=box.clientWidth,h=box.clientHeight;
-  for(const l of T3.lots||[]){const el=box.querySelector(`[data-b="${l.b.id}"]`);if(!el)continue;const top=Math.max(0,...l.gs.map(G=>G.y))+WH+2.2;T3.v3.set(l.cx,top,0).project(T3.cam);
-    if(T3.v3.z>1||T3.iso){el.style.display='none';continue;}el.style.display='';const ew=el.offsetWidth||90;el.style.transform=`translate(${Math.round((T3.v3.x*.5+.5)*w-ew/2)}px,${clamp(Math.round((-T3.v3.y*.5+.5)*h-14),8,h-40)}px)`;}
+  for(const l of T3.lots||[]){const el=box.querySelector(`[data-b="${l.b.id}"]`);if(!el)continue;const vg=l.gs.filter(G=>G.g.visible),top=Math.max(0,...(vg.length?vg:l.gs).map(G=>G.y))+WH+2.2;T3.v3.set(l.cx,top,0).project(T3.cam);
+    if(T3.v3.z>1||!vg.length){el.style.display='none';continue;}el.style.display='';const ew=el.offsetWidth||90;el.style.transform=`translate(${Math.round((T3.v3.x*.5+.5)*w-ew/2)}px,${clamp(Math.round((-T3.v3.y*.5+.5)*h-14),8,h-40)}px)`;}
   for(const[fid,G]of T3.G){const el=box.querySelector(`[data-f="${fid}"]`);if(!el)continue;
   if(!G.g.visible){el.style.display='none';continue;}T3.v3.set(G.g.position.x+G.w/2+.4,G.y+.9,G.d/2).project(T3.cam);
   if(T3.v3.z>1){el.style.display='none';continue;}el.style.display='';const ew=el.offsetWidth||90,x=Math.min(Math.round((T3.v3.x*.5+.5)*w+6),w-ew-8),y=clamp(Math.round((-T3.v3.y*.5+.5)*h-12),8,h-60);el.style.transform=`translate(${x}px,${y}px)`;}
@@ -1462,7 +1462,7 @@ function vtabs(){$('#vDb').classList.toggle('on',ST.view==='db');$('#vDb').setAt
 /* =====================================================================
    10. Ask panel
    ===================================================================== */
-function autoScope(){ST.scope=ST.view==='3d'||!ST.fid?{type:'building',id:ST.bId}:{type:'floor',id:ST.fid};}
+function autoScope(){const many=PROJ.buildings.filter(b=>b.floors.length).length>1;ST.scope=many?{type:'project'}:ST.view==='3d'||!ST.fid?{type:'building',id:ST.bId}:{type:'floor',id:ST.fid};}
 function renderScope(){const s=ST.scope;if((s.type==='floor'&&(!FL[s.id]||FL[s.id].deleted))||(s.type==='building'&&!bld(s.id)))autoScope();
   const many=PROJ.buildings.length>1,f=FL[ST.fid];if(ST.scope.type==='project'&&!many)autoScope();
   $('#seg').innerHTML=`<button data-sc="floor" class="${ST.scope.type==='floor'?'on':''}" ${f?'':'disabled'}>${f?esc(fname(f)):'This floor'}</button><button data-sc="building" class="${ST.scope.type==='building'?'on':''}">${esc(curB().name)}</button>${many?`<button data-sc="project" class="${ST.scope.type==='project'?'on':''}">All buildings</button>`:''}`;}
@@ -1601,7 +1601,7 @@ function activate(n){const A=ANS[n];if(!A)return;ST.active=A;
   refreshAnswerViews();}
 function clearActive(){ST.active=null;refreshAnswerViews();}
 function refreshAnswerViews(){$$('.ans').forEach(el=>{const A=ANS[el.dataset.n];if(A){el.classList.toggle('act',!!ST.active&&ST.active.n===A.n);el.innerHTML=ansHTML(A);}});
-  renderList();renderTabs();if(ST.view==='plan'){drawEvidence();renderLegend();}else{pins3D();labels3D();}}
+  renderList();renderTabs();if(ST.view==='plan'){drawEvidence();renderLegend();}else{pins3D();paint3D();labels3D(true);}}
 function rerunAnswers(){const ns=Object.keys(ANS);if(!ns.length)return;ns.forEach(n=>{const o=ANS[n];if(o.server||o.planned||(o.kind==='nope'&&o.P&&(o.P.unsupported||!o.P.strong)))return;const A=answer(o.q,o.scope,{silent:1});A.n=o.n;ANS[n]=A;if(ST.active&&ST.active.n===A.n)ST.active=A;});
   refreshAnswerViews();if(ST.trTab==='answer')trSoon();}
 

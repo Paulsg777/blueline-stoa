@@ -23,7 +23,7 @@ import numpy as np, cv2
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import ask, schematic, arcs
 
-READER_VERSION = "perceive+measure+check v14"     # part of the cache key: a new reader version never reuses old reads
+READER_VERSION = "perceive+measure+check v15"     # part of the cache key: a new reader version never reuses old reads
 CACHE_DIR = os.environ.get("READ_CACHE", "read_cache")
 
 # room label words (several languages) -> the frontend's room types
@@ -59,7 +59,9 @@ Return JSON only:
  "items": [{"kind": "door"|"window"|"toilet"|"sink"|"kitchen_sink"|"shower"|"bathtub"|"stove"|"sauna_stove", "point": [x, y] its centre}],
  "symbols": [{"kind": "what it is, in plain lower-case English, e.g. check valve, gate valve, pressure relief valve, pump, flow meter, pressure gauge, filter",
               "tag": "the identifier printed next to it exactly as printed (e.g. CV-3, PS-12) or null", "point": [x, y] its centre}],
- "scale_bar": {"box": [x0,y0,x1,y1], "length": the largest number printed on the bar, "unit": "m"/"mm"/"ft"} or null}
+ "scale_bar": {"box": [x0,y0,x1,y1], "length": the largest number printed on the bar, "unit": "m"/"mm"/"ft"} or null,
+ "building_box": [x0, y0, x1, y1] a tight box around the building's outer walls (balconies included; not the title block,
+                 legend, notes, frame or scale bar)}
 Rooms: only on a floor_plan sheet; on any other sheet type return "rooms": []. On a floor plan include every room, corridor,
 bathroom, balcony, storage and shaft drawn inside the building outline; exclude the title block, legend, notes and anything outside.
 Items: list EVERY door (each door leaf or doorway drawn, including balcony and entrance doors), every window (each window
@@ -155,16 +157,25 @@ def rooms_from_interior(img, sch, perc, ppm):
         try: pts.append((float(r["point"][0]) * W / 1000, float(r["point"][1]) * H / 1000, r))
         except Exception: pass
 
-    # drawing frames and title-block borders are thin lines across most of the sheet: they are not walls (a building's
-    # outer wall is thick), and left in they make the whole paper "inside"
-    ink0 = (1 - free).astype(np.uint8)
-    longh = cv2.morphologyEx(ink0, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (int(0.3 * W), 1)))
-    longv = cv2.morphologyEx(ink0, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (1, int(0.3 * H))))
-    t_ = max(3, int(0.08 * (ppm or 40)))                    # thicker than ~8 cm: a wall, keep it
-    thickh = cv2.morphologyEx(longh, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (1, t_)))
-    thickv = cv2.morphologyEx(longv, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (t_, 1)))
-    frame = ((longh & (1 - cv2.dilate(thickh, np.ones((3, 3), np.uint8)))) | (longv & (1 - cv2.dilate(thickv, np.ones((3, 3), np.uint8))))).astype(np.uint8)
-    free = np.maximum(free, cv2.dilate(frame, np.ones((3, 3), np.uint8)))
+    # everything outside the building's box (drawing frame, title block, legend) is outside, whatever lines it holds.
+    # The box comes from the model; without it, from the listed rooms' points with a margin.
+    bb = None
+    try:
+        q = [float(v) for v in (perc.get("building_box") or [])]
+        if len(q) == 4 and q[2] > q[0] and q[3] > q[1]: bb = [q[0] * W / 1000, q[1] * H / 1000, q[2] * W / 1000, q[3] * H / 1000]
+    except Exception:
+        bb = None
+    if bb is None and len(pts) >= 2:
+        xs_, ys_ = [p[0] for p in pts], [p[1] for p in pts]
+        mx_, my_ = 0.15 * (max(xs_) - min(xs_)) + 0.03 * W, 0.15 * (max(ys_) - min(ys_)) + 0.03 * H
+        bb = [min(xs_) - mx_, min(ys_) - my_, max(xs_) + mx_, max(ys_) + my_]
+    if bb is not None:
+        m_ = int(0.015 * max(H, W))                         # the model's box is approximate: keep a margin
+        x0b, y0b = max(0, int(bb[0]) - m_), max(0, int(bb[1]) - m_)
+        x1b, y1b = min(W, int(bb[2]) + m_), min(H, int(bb[3]) + m_)
+        if (x1b - x0b) * (y1b - y0b) < 0.97 * W * H:        # the box leaves something out: blank it
+            keep = np.zeros((H, W), np.uint8); keep[y0b:y1b, x0b:x1b] = 1
+            free = np.where(keep > 0, free, 1).astype(np.uint8)
 
     def enclosed(gap):
         """Free floor the sheet's edge cannot reach, with gaps in the outline up to `gap` px bridged (dotted or broken
@@ -201,8 +212,62 @@ def rooms_from_interior(img, sch, perc, ppm):
             if (ctr(t)[0] - px) ** 2 + (ctr(t)[1] - py) ** 2 < (0.12 * max(H, W)) ** 2: px, py = ctr(t)
         snapped.append((px, py, r, bool(hits)))
     if not snapped or interior.sum() == 0: return []
+    # completeness: the model's list can stop early on a large sheet. Every open area of the enclosed floor also gets a
+    # seed (centres of open floor), all rooms are split together, then a seed that only split a room in two is merged
+    # back: two halves of one room share a long open edge, two rooms only a doorway.
+    unit = ppm or (0.012 * max(H, W))
+    dtm = cv2.distanceTransform(interior, cv2.DIST_L2, 5)
+    ys_, xs_ = np.where(dtm > 0.7 * unit)
+    auto = []
+    for i in np.argsort(-dtm[ys_, xs_])[::5]:
+        x, y = int(xs_[i]), int(ys_[i])
+        if all((x - a) ** 2 + (y - b) ** 2 > (1.6 * unit) ** 2 for a, b, *_ in snapped) and \
+           all((x - a) ** 2 + (y - b) ** 2 > (2.4 * unit) ** 2 for a, b in auto):
+            auto.append((x, y))
+        if len(snapped) + len(auto) >= 240: break
+    # extra seeds only where a listed room swallowed far more floor than a room has (over 3x the median listed room and
+    # over ~40 m2): that is a room growing through doorways into rooms the model did not list
     who = split_along_walls(img, interior, 0, 0, [(p[0], p[1]) for p in snapped], ppm, sch["texts"])
+    sizes = [int(((who == j) & (interior > 0)).sum()) for j in range(len(snapped))]
+    med = float(np.median([z for z in sizes if z > 0])) if any(sizes) else 0
+    big = [j for j, z in enumerate(sizes) if med and z > 3 * med and z > 40 * unit ** 2]
+    if big:
+        zone = np.isin(who, big)
+        auto = [(x, y) for x, y in auto if zone[y, x]]
+    else:
+        auto = []
+    seeds = [(p[0], p[1]) for p in snapped] + auto
+    if auto: who = split_along_walls(img, interior, 0, 0, seeds, ppm, sch["texts"])
+    n0 = len(snapped)
+    owner = list(range(len(seeds)))                         # union-find: auto regions merged into a neighbour
+    def find(i):
+        while owner[i] != i: owner[i] = owner[owner[i]]; i = owner[i]
+        return i
+    k3 = np.ones((3, 3), np.uint8)
+    for j in range(n0, len(seeds)):
+        mj = ((who == j) & (interior > 0)).astype(np.uint8)
+        if not mj.any(): continue
+        ring = (cv2.dilate(mj, k3) > 0) & (mj == 0) & (interior > 0)
+        nb = who[ring]; nb = nb[(nb >= 0) & (nb != j)]
+        if not len(nb): continue
+        ids, cnt = np.unique(nb, return_counts=True)
+        best = int(ids[np.argmax(cnt)]); shared = int(cnt.max())
+        if shared >= 1.5 * unit:                            # a long open edge: the same room
+            a_, b_ = find(j), find(best)
+            if a_ != b_: owner[a_] = b_ if b_ < n0 or a_ >= n0 else a_
+    for j in range(len(seeds)):
+        if find(j) != j: who[who == j] = find(j)
     rooms = []
+    for j in range(n0, len(seeds)):                         # unlisted rooms that stayed on their own
+        if find(j) != j: continue
+        pm = ((who == j) & (interior > 0)).astype(np.uint8)
+        if pm.sum() < 2 * unit ** 2: continue               # under ~2 m2: a shaft or a gap, not a room
+        cs, _ = cv2.findContours(cv2.morphologyEx(pm, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8)), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not cs: continue
+        poly = cv2.approxPolyDP(max(cs, key=cv2.contourArea), 1.5, True).reshape(-1, 2)
+        rooms.append(dict(id="", type="Room", label="", polygon=poly.tolist(), printedAreaM2=None,
+                          measuredAreaM2=round(float(pm.sum()) / ppm ** 2, 2) if ppm else None, conf=0.4, labelVerified=False, source="drawing"))
+    unlisted = rooms; rooms = []
     for j, (px, py, r, ok) in enumerate(snapped):
         pm = ((who == j) & (interior > 0)).astype(np.uint8)
         pm = cv2.morphologyEx(pm, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
@@ -213,6 +278,7 @@ def rooms_from_interior(img, sch, perc, ppm):
         label = " ".join(x for x in (str(r.get("name") or "").strip(), str(r.get("number") or "").strip()) if x)
         rooms.append(dict(id=f"R{len(rooms) + 1}", type=room_type([label]), label=label, polygon=poly.tolist(), printedAreaM2=None,
                           measuredAreaM2=round(float(pm.sum()) / ppm ** 2, 2) if ppm else None, conf=0.8 if ok else 0.5, labelVerified=ok))
+    for r in unlisted: r["id"] = f"R{len(rooms) + 1}"; rooms.append(r)
     return rooms
 
 

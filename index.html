@@ -96,6 +96,7 @@ table.kt{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
 .tsum b{color:#E6E6E6;font-weight:600}
 .fbig{font-size:20px;color:var(--mut);margin:6px 0 8px;display:flex;gap:18px}.fbig b{color:#F2F2F2;font-size:26px;font-weight:600;margin-right:5px}
 .ff{color:var(--mut);margin:3px 0;line-height:1.5}.ff b{color:#E6E6E6;font-weight:600}.ff.bad{color:#F2B84B}
+.flist{display:flex;flex-direction:column;margin:4px 0 6px}.frow{display:grid;grid-template-columns:1fr 1.4fr 70px;gap:10px;text-align:left;padding:7px 10px;border-radius:6px;color:#DDD;background:none;border:0;cursor:pointer;font:inherit}.frow:hover{background:#2A2A2A}.frow.on{background:#22324A}.frow span:nth-child(2){color:var(--mut)}.frow span.bad{color:#F2B84B}.frow .gv{text-align:right;color:var(--mut)}
 .ttabs .tl{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue2);margin-left:6px;vertical-align:middle;animation:pulse 1s infinite}
 .mbox code{font:11.5px 'JetBrains Mono',monospace;background:#1E1E1E;border-radius:4px;padding:0 4px;color:#CFE0FF}
 
@@ -1482,7 +1483,7 @@ function floorFacts(f){const S=f.schema||{},d=S.drawing||{},it=S.items||[],k=t=>
 function traceReadingHTML(){const b=curB(),now=performance.now(),fs=b.floors.map(id=>FL[id]).filter(f=>f.rt);let h='';
   if(fs.length>1){const T0=Math.min(...fs.map(f=>f.rt.s)),T1=Math.max(...fs.map(f=>f.rt.e||now)),span=Math.max(1,T1-T0),done=fs.filter(f=>f.rt.e).length;
     h+=`<div class="tsum">${done<fs.length?`Reading <b>${done} of ${fs.length}</b> floors`:`<b>${fs.length}</b> floors read`} · <b>${fmtMs(T1-T0)}</b></div>`;
-    h+=`<div class="gantt">${[...fs].reverse().map(f=>{const e=f.rt.e||now;return`<button type="button" class="grow ${f.id===ST.fid?'on':''}" data-act="trf" data-f="${f.id}"><span class="gn">${esc(fname(f))}</span><span class="gt"><i class="${f.status}" style="left:${((f.rt.s-T0)/span*100).toFixed(2)}%;width:${Math.max(.8,(e-f.rt.s)/span*100).toFixed(2)}%"></i></span><span class="gv">${fmtMs(e-f.rt.s)}</span></button>`;}).join('')}</div>`;}
+    h+=`<div class="flist">${[...fs].reverse().map(f=>{const e=f.rt.e||now,F=f.status==='read'&&f.schema?floorFacts(f):null;const st=f.status==='queued'?'Waiting':f.status==='reading'?'Reading…':F?(F.bad?'⚠ check size':`${F.rooms} rooms · ${F.doors} doors`):(f.err?'Failed':'');return`<button type="button" class="frow ${f.id===ST.fid?'on':''}" data-act="trf" data-f="${f.id}"><span>${esc(fname(f))}</span><span class="${F&&F.bad?'bad':''}">${st}</span><span class="gv">${f.status==='queued'?'':fmtMs(e-f.rt.s)}</span></button>`;}).join('')}</div>`;}
   const f=FL[ST.fid];
   if(!f||f.deleted)return h||`<div class="tempty">Add a floor plan to see what was found on it.</div>`;
   h+=`<div class="tgh">${esc(fname(f))}</div>`;

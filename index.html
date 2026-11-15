@@ -388,6 +388,24 @@ details.how summary:hover{color:var(--ink)}
 .dblab b{color:#9CC0FF;font-weight:600;margin-left:5px}.dblab.dim{opacity:.25}
 .dbtip{position:absolute;z-index:3;pointer-events:none;background:rgba(28,28,28,.96);border:1px solid #4A6FB0;border-radius:8px;padding:8px 11px;font-size:12px;min-width:180px;max-width:280px}
 .dbtip b{display:block;font-size:12.5px;color:#F0F0F0}.dbtip span{display:block;color:var(--mut);margin-top:1px}.dbtip em{display:block;font-style:normal;color:#AFC6EE;margin-top:5px}.dbtip small{display:block;color:var(--fnt);margin-top:5px}
+
+.dbo.bc{left:50%;bottom:16px;transform:translateX(-50%);width:min(620px,calc(100% - 820px))}
+.dbask{display:flex;gap:8px;align-items:center;background:rgba(31,31,31,.95);border:1px solid #3A3A3A;border-radius:12px;padding:6px 6px 6px 14px}
+.dbask input{flex:1;background:none;border:0;outline:none;color:#F0F0F0;font:14px Inter,sans-serif;padding:7px 0}
+.dbask button{border:0;background:#3A74E8;color:#fff;border-radius:8px;width:34px;height:34px;display:grid;place-items:center;cursor:pointer}
+.dbask .cur{display:inline-block;width:1px;height:16px;background:#8FB0EA;animation:bl 1s steps(1) infinite;vertical-align:middle}
+.dbo.rp{right:16px;top:62px;width:340px}
+.dbans{background:rgba(39,39,39,.95);border:1px solid #353535;border-radius:12px;padding:14px 16px;transition:opacity .3s}
+.dbans .q{color:#9A9A9A;font-size:12px;margin-bottom:8px}
+.dbans .num{display:flex;align-items:baseline;gap:8px}.dbans .num b{font:600 34px/1 Inter,sans-serif;color:#F4F4F4;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.dbans .num span{color:#9A9A9A;font-size:14px;font-weight:500}
+.dbans .sub{color:#8E8E8E;font-size:12px;margin:6px 0 10px}
+.dbrow{display:grid;grid-template-columns:minmax(0,1fr) 70px 28px;gap:8px;align-items:center;padding:5px 6px;border-radius:6px;font-size:12px;color:#CFCFCF;transition:background .25s}
+.dbrow span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dbrow i{display:block;height:6px;border-radius:3px;background:#3A74E8}.dbrow em{font-style:normal;text-align:right;color:#AFC6EE;font-variant-numeric:tabular-nums}
+.dbrow small{display:block;color:var(--fnt);font-size:11px}
+.dbrow.on{background:#22314B}
+.dbans .ft{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.dbplay{border:1px solid #3A3A3A;background:rgba(34,34,34,.92);color:#CFCFCF;border-radius:8px;padding:6px 10px;font:500 12px Inter,sans-serif;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.dbplay i{width:7px;height:7px;border-radius:50%;background:#6FCF97;box-shadow:0 0 6px #6FCF97}.dbplay.off i{background:#777;box-shadow:none}
 </style>
 </head>
 <body>
@@ -1671,6 +1689,7 @@ document.addEventListener('click',e=>{
     case 'sample':loadSample();break;
     case 'dbopen':dbOpen(t.dataset.id);break;
     case 'dbtype':DB.type=DB.type===t.dataset.t?null:t.dataset.t;DB.q='';if(DC.mode==='city'&&DC.slabs){const qi=$('#dbqi');if(qi)qi.value='';cityQuery();}else{renderDB();$('#dbv').scrollTop=0;}break;
+    case 'dbplay':if(DEMO.on)demoStop();else demoStart();break;
     case 'dbmode':DC.mode=t.dataset.m;$('#dbv').innerHTML='';renderDBView();break;
     case 'addb':{const b=newBuilding();setBuilding(b.id);toast(`${b.name} added. Add its floor plans.`);break;}
     case 'delb':e.stopPropagation();deleteBuilding(t.dataset.b);break;
@@ -1827,22 +1846,22 @@ async function renderDBView(){if(!DB.data){await renderDB();if(!DB.data)return;}
     el.innerHTML=`<canvas id="dbc3" tabindex="0"></canvas><div id="dblabs"></div><div class="dbtip" id="dbtip" hidden></div>
     <div class="dbo tl"><div class="dbcard"><h1>Drawing database</h1><p>Each tower is a project, each layer a floor plan.</p>
       <div class="dbnums"><div><b>${nf(P.length)}</b><span>drawings</span></div><div><b>${pr}</b><span>projects</span></div><div><b>${nf(rooms)}</b><span>rooms found</span></div><div><b>${nf(D.models)}</b><span>3D models</span></div></div></div></div>
-    <div class="dbo tc"><div class="dbq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="dbqi" placeholder="Search every drawing: bathroom, kitchen, Kontor, Küche, 205…" autocomplete="off" spellcheck="false"></div><div class="dbc" id="dbchips"></div></div>
-    <div class="dbo tr"><div class="dbseg"><button type="button" class="on" data-act="dbmode" data-m="city">Towers</button><button type="button" data-act="dbmode" data-m="list">List</button></div></div>
-    <div class="dbo bl"><div class="dbcard dbres" id="dbres"></div></div>
-    <div class="dbo br"><a class="dbx" href="${esc(DB.base+'db/index.json')}" download="blueline-database.json" title="The whole database as one JSON file, for other software and AI agents"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Export for AI agents</a></div>`;
-    const qi=$('#dbqi');qi.value=DB.q;qi.oninput=()=>{DB.q=qi.value;DB.type=null;clearTimeout(DB.t);DB.t=setTimeout(cityQuery,60);};
+    <div class="dbo tr" style="display:flex;gap:8px"><button type="button" class="dbplay" id="dbplay" data-act="dbplay"><i></i>Demo running</button><a class="dbx" href="${esc(DB.base+'db/index.json')}" download="blueline-database.json" title="The whole database as one JSON file, for other software and AI agents"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Export for AI agents</a></div>
+    <div class="dbo rp"><div class="dbans" id="dbans" style="opacity:0"></div></div>
+    <div class="dbres" id="dbres" hidden></div>
+    <div class="dbo bc"><form class="dbask" id="dbaskf"><input id="dbqi" placeholder="Ask the whole archive…" autocomplete="off" spellcheck="false"><button type="submit" aria-label="Ask"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></svg></button></form></div>`;
+    const qi=$('#dbqi');$('#dbaskf').onsubmit=e=>{e.preventDefault();demoStop();cityAsk(qi.value,{tour:true});};qi.onfocus=()=>demoStop();
     await buildCity();}
   else startCity();
-  cityQuery();}
-function cityChips(){$('#dbchips').innerHTML=dbTypes().slice(0,8).map(([k,n])=>`<button type="button" data-act="dbtype" data-t="${k}" class="${DB.type===k?'on':''}">${esc(TYPEL[k][1])}<i>${nf(n)}</i></button>`).join('');}
+  cityQuery();if(DEMO.auto)demoStart();}
+function cityChips(){const el=$('#dbchips');if(!el)return;el.innerHTML=dbTypes().slice(0,8).map(([k,n])=>`<button type="button" data-act="dbtype" data-t="${k}" class="${DB.type===k?'on':''}">${esc(TYPEL[k][1])}<i>${nf(n)}</i></button>`).join('');}
 async function buildCity(){if(!(await ensure3D()))return;const THREE=T3.THREE,{OrbitControls}=await import('three/addons/controls/OrbitControls.js'),c=$('#dbc3');
-  const R=new THREE.WebGLRenderer({canvas:c,antialias:true});R.setPixelRatio(Math.min(devicePixelRatio||1,2));R.setClearColor(0x2D2D2D,1);
+  const R=new THREE.WebGLRenderer({canvas:c,antialias:true,powerPreference:'high-performance'});R.setPixelRatio(Math.min(devicePixelRatio||1,1.5));R.setClearColor(0x2D2D2D,1);
   const sc=new THREE.Scene();sc.fog=new THREE.Fog(0x2D2D2D,160,420);const cam=new THREE.PerspectiveCamera(32,1,.5,3000);
   sc.add(new THREE.HemisphereLight(0xffffff,0x2a2a2a,1.25));const sun=new THREE.DirectionalLight(0xffffff,1.6);sun.position.set(-40,90,60);sc.add(sun);
   const grid=new THREE.GridHelper(600,150,0x383838,0x313131);grid.position.y=-.05;sc.add(grid);
   const ctl=new OrbitControls(cam,c);Object.assign(ctl,{enableDamping:true,dampingFactor:.08,screenSpacePanning:true,maxPolarAngle:Math.PI*.47,minDistance:15,maxDistance:520,autoRotate:true,autoRotateSpeed:.35});
-  ctl.addEventListener('start',()=>{ctl.autoRotate=false;});
+  ctl.addEventListener('start',()=>{ctl.autoRotate=false;DC.goal=null;});
   const P=DB.data.plans,byP={};P.filter(p=>p.kind==='cad').forEach(p=>(byP[p.pn]=byP[p.pn]||[]).push(p));
   const fk=p=>{const m=String(p.floor||'').match(/^(\d+)/);return m?+m[1]:0;};
   const towers=Object.entries(byP).map(([n,fs])=>({n,fs:fs.sort((a,b)=>fk(a)-fk(b))})).sort((a,b)=>b.fs.length-a.fs.length||a.n.localeCompare(b.n));
@@ -1863,38 +1882,72 @@ async function buildCity(){if(!(await ensure3D()))return;const THREE=T3.THREE,{O
   const scans=P.filter(p=>p.kind==='scan'),SC=25,sx=(COLS/2+1.2)*SP,mScan=new THREE.MeshLambertMaterial({color:0x4A4A4A}),inst=new THREE.InstancedMesh(gSlab,mScan,scans.length),M=new THREE.Matrix4();
   scans.forEach((p,i)=>{const r=Math.floor(i/SC),c2=i%SC;M.makeScale(1.5,.12+(i%7)*.03,1.9);M.setPosition(sx+(c2%5)*2-4,.1+Math.floor(c2/5)*.25,(r-SC/2/1.2)*2.3);inst.setMatrixAt(i,M);});sc.add(inst);
   const sl=document.createElement('div');sl.className='dblab';sl.innerHTML=`${scans.length} scans<b>waiting for the reader</b>`;$('#dblabs').appendChild(sl);labels.push({el:sl,t:null,pos:new THREE.Vector3(sx,4,0)});
-  const span=COLS*SP;cam.position.set(span*.55,span*.62,span*1.05);ctl.target.set(0,8,0);
+  const span=COLS*SP;cam.position.set(span*.55,span*.62,span*1.05);ctl.target.set(0,8,0);DC.home={pos:cam.position.clone(),tgt:ctl.target.clone()};
   Object.assign(DC,{R,sc,cam,ctl,slabs,labels,ray:new THREE.Raycaster(),ndc:new THREE.Vector2(),v:new THREE.Vector3(),t0:performance.now(),hover:null,THREE,gDot:new THREE.SphereGeometry(.42,12,10),mDot:new THREE.MeshBasicMaterial({color:0x7FB0FF})});
   c.addEventListener('pointermove',cityHover);c.addEventListener('pointerleave',()=>{DC.hover=null;$('#dbtip').hidden=true;});
-  c.addEventListener('click',()=>{if(DC.hover)dbOpen(DC.hover.id);});
   new ResizeObserver(citySize).observe($('#dbv'));citySize();startCity();}
 function citySize(){if(!DC.R)return;const el=$('#dbv'),w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;DC.R.setSize(w,h,false);DC.cam.aspect=w/h;DC.cam.updateProjectionMatrix();}
 function startCity(){if(!DC.R)return;DC.on=true;cancelAnimationFrame(DC.raf);const loop=()=>{if(!DC.on)return;DC.raf=requestAnimationFrame(loop);cityFrame();};loop();}
-function stopCity(){DC.on=false;cancelAnimationFrame(DC.raf);}
+function stopCity(){DC.on=false;cancelAnimationFrame(DC.raf);if(typeof demoStop==='function'&&DEMO.on){demoStop(true);}}
 function cityFrame(){const t=(performance.now()-DC.t0)/1000;
   for(const g of DC.slabs){const u=g.userData,k=Math.min(1,Math.max(0,(t-u.delay)/.9)),e=1-Math.pow(1-k,3);const lift=u.hit?.35:0;g.position.y+=((u.y+lift+(1-e)*40)-g.position.y)*(k<1?1:.15);}
-  DC.ctl.update();DC.R.render(DC.sc,DC.cam);
+  if(DC.goal){DC.cam.position.lerp(DC.goal.pos,.035);DC.ctl.target.lerp(DC.goal.tgt,.05);}
+  const now=performance.now();for(const g of DC.slabs){const u=g.userData;if(u.litAt!=null){const on=now>=u.litAt;u.edge.material.opacity=on?(.95):0;u.dots.visible=on;u.body.material.opacity=on?1:(DC.active?.12:1);u.top.material.opacity=on?1:(DC.active?.1:1);}}
+  DC.ctl.update();DC.R.render(DC.sc,DC.cam);DC.fr=(DC.fr||0)+1;if(DC.fr%2)return;
   const el=$('#dbv'),w=el.clientWidth,h=el.clientHeight;
   for(const L of DC.labels){DC.v.copy(L.pos).project(DC.cam);const vis=DC.v.z<1&&Math.abs(DC.v.x)<1.1&&Math.abs(DC.v.y)<1.1;L.el.style.display=vis?'':'none';if(vis){L.el.style.left=((DC.v.x+1)/2*w)+'px';L.el.style.top=((1-DC.v.y)/2*h)+'px';}}}
 function cityQuery(){if(!DC.slabs)return;cityChips();const active=!!(DB.q.trim()||DB.type),M=active?dbMatch():null,hit=new Map();if(M)M.res.forEach(x=>hit.set(x.p.id,x.hits));
   const THREE=DC.THREE;
-  for(const g of DC.slabs){const u=g.userData,hs=hit.get(u.p.id),on=!active||!!hs;u.hit=active&&!!hs&&hs.length>0;
-    u.body.material.opacity=on?1:.12;u.top.material.opacity=on?1:.1;u.edge.material.opacity=u.hit?.95:0;
-    u.dots.clear();if(u.hit)hs.slice(0,80).forEach(r=>{const m=new THREE.Mesh(DC.gDot,DC.mDot);m.position.set(-u.w/2+r.x*u.w,0,-u.d/2+r.y*u.d);u.dots.add(m);});}
+  DC.active=active;const t0=performance.now()+150;let k=0;
+  for(const g of DC.slabs){const u=g.userData,hs=hit.get(u.p.id);u.hit=active&&!!hs&&hs.length>0;
+    u.dots.clear();if(u.hit)hs.slice(0,80).forEach(r=>{const m=new THREE.Mesh(DC.gDot,DC.mDot);m.position.set(-u.w/2+r.x*u.w,0,-u.d/2+r.y*u.d);u.dots.add(m);});
+    if(!active){u.litAt=null;u.body.material.opacity=1;u.top.material.opacity=1;u.edge.material.opacity=0;u.dots.visible=false;}
+    else if(u.hit)u.litAt=t0+(k++)*55;else{u.litAt=Infinity;}}
   for(const L of DC.labels){if(!L.t)continue;const n=active?L.t.fs.reduce((a,p)=>a+((hit.get(p.id)||[]).length),0):L.t.fs.reduce((a,p)=>a+p.rooms.length,0);
     L.el.innerHTML=`${esc(L.t.n.length>34?L.t.n.slice(0,33)+'…':L.t.n)}<b>${active?n:L.t.fs.length+(L.t.fs.length===1?' floor':' floors')}</b>`;L.el.classList.toggle('dim',active&&!n);}
   const r=$('#dbres'),P=DB.data.plans;
-  if(!active)r.innerHTML=`<b>${nf(P.length)} drawings, one database</b><span>Search, or click any floor to open it.</span>`;
+  if(!active)r.innerHTML=`<b>${nf(P.length)} drawings, one database</b><span>Ask anything in plain language, in any language.</span>`;
   else{const label=DB.type?TYPEL[DB.type][1].toLowerCase():`“${DB.q.trim()}”`;r.innerHTML=`<b>${M.rooms?`${nf(M.rooms)} ${M.rooms===1?'room':'rooms'} on ${M.res.length} floor${M.res.length===1?'':'s'}`:`${M.res.length} drawings`}</b><span>${esc(label)} · ${M.ms<1?'under 1':Math.round(M.ms)} ms across ${nf(P.length)} drawings</span>`;}}
 function cityHover(e){const c=$('#dbc3'),b=c.getBoundingClientRect();DC.ndc.set((e.clientX-b.left)/b.width*2-1,-((e.clientY-b.top)/b.height)*2+1);DC.ray.setFromCamera(DC.ndc,DC.cam);
   const objs=DC.slabs.flatMap(g=>[g.userData.body,g.userData.top]).filter(o=>o.material.opacity>.5);const hit=DC.ray.intersectObjects(objs,false)[0];const tip=$('#dbtip');
   if(!hit){DC.hover=null;tip.hidden=true;c.style.cursor='';return;}const p=hit.object.userData.p;DC.hover=p;c.style.cursor='pointer';
   const hs=(DB.q.trim()||DB.type)?(dbMatch().res.find(x=>x.p.id===p.id)||{hits:[]}).hits:[],tc={};p.rooms.forEach(r=>tc[r.type]=(tc[r.type]||0)+1);
   const top=Object.entries(tc).filter(([k])=>k!=='other').sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,n])=>`${n} ${TYPEL[k][1].toLowerCase()}`).join(' · ');
-  tip.innerHTML=`<b>${esc(p.pn)}</b><span>${esc(p.fn||p.floor)} · ${p.rooms.length} rooms${p.scale?` · 1:${p.scale}`:''}</span>${hs.length?`<em>${esc([...new Set(hs.map(r=>r.name+(r.num?' '+r.num:'')))].slice(0,5).join(' · '))}</em>`:top?`<em>${esc(top)}</em>`:''}<small>Click to open this floor</small>`;
+  tip.innerHTML=`<b>${esc(p.pn)}</b><span>${esc(p.fn||p.floor)} · ${p.rooms.length} rooms${p.scale?` · 1:${p.scale}`:''}</span>${hs.length?`<em>${esc([...new Set(hs.map(r=>r.name+(r.num?' '+r.num:'')))].slice(0,5).join(' · '))}</em>`:top?`<em>${esc(top)}</em>`:''}`;
   tip.hidden=false;tip.style.left=Math.min(b.width-290,e.clientX-b.left+14)+'px';tip.style.top=(e.clientY-b.top+14)+'px';}
 
-window.BL={DC,renderDBView,DB,renderDB,dbOpen,PROJ,FL,ST,T3,ANS,CFG,ask,answer,parseQ,evalSheet,addFiles,loadSample,setView,selectFloor,moveFloor,deleteFloor,queueRead,setTrace,poolSize,wallModel,fromTeamSchematic,fromTeamScene};
+
+/* ---- talk to the archive: plain-language questions, and a looping demo ---- */
+const DEMO={auto:true,on:false,i:0,timers:[],qs:['Show me every bathroom in the archive','Where are all the kitchens?','Find every room called Kontor','How many stairs and lifts are there?','Which buildings have balconies?','Find all the offices','Where is every Küche?','Show me the meeting rooms']};
+const STOP=new Set('show me every all the where are is find rooms room called named how many there in archive which buildings building have has with a of list any each our my do does what please on floors floor'.split(' '));
+function nlParse(t){const toks=String(t).toLowerCase().replace(/[?!.,"“”]/g,' ').split(/\s+/).filter(Boolean),rest=toks.filter(w=>!STOP.has(w));
+  for(const w of rest){for(const [k,v] of Object.entries(TYPEL)){if(k!=='other'&&v[2].some(x=>w===x||w===x+'s'||w===x+'es'||(w.length>4&&x.startsWith(w))))return{type:k};}}
+  return{q:rest.join(' ')};}
+function cityAsk(text,opt={}){text=String(text||'').trim();if(!text||!DC.slabs)return;const P=nlParse(text);DB.type=P.type||null;DB.q=P.type?'':(P.q||text);
+  const ans=$('#dbans');ans.style.opacity=1;ans.innerHTML=`<div class="q">“${esc(text)}”</div><span class="pill wait">Thinking<i class="dots"><b>.</b><b>.</b><b>.</b></i></span>`;
+  later(()=>{cityQuery();const M=dbMatch(),by={};M.res.forEach(x=>{if(!x.hits.length)return;const n=x.p.pn;(by[n]=by[n]||{n,c:0,f:0,ids:[]});by[n].c+=x.hits.length;by[n].f++;by[n].ids.push(x.p.id);});
+    const rows=Object.values(by).sort((a,b)=>b.c-a.c),mx=rows.length?rows[0].c:1,noun=DB.type?TYPEL[DB.type][1].toLowerCase().replace('wcs','WCs'):'rooms';
+    ans.innerHTML=`<div class="q">“${esc(text)}”</div><div class="num"><b id="dbcnt">0</b><span>${esc(M.rooms===1&&DB.type?TYPEL[DB.type][0].toLowerCase():noun)}</span></div>
+      <div class="sub">on ${M.res.filter(x=>x.hits.length).length} floors in ${rows.length} buildings · ${M.ms<1?'under 1':Math.round(M.ms)} ms across ${nf(DB.data.plans.length)} drawings</div>
+      ${rows.slice(0,6).map((r,i)=>`<div class="dbrow" data-i="${i}"><span>${esc(r.n)}<small>${r.f} floor${r.f>1?'s':''}</small></span><i style="width:${Math.max(6,r.c/mx*100)}%"></i><em>${r.c}</em></div>`).join('')}
+      <div class="ft"><span class="pill ok">Every room marked on its drawing</span></div>`;
+    countUp($('#dbcnt'),M.rooms,900);
+    if(opt.tour&&rows.length)tour(rows.slice(0,3));},650);}
+function countUp(el,n,ms){const t0=performance.now();const f=()=>{const k=Math.min(1,(performance.now()-t0)/ms);el.textContent=nf(Math.round(n*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(f);};f();}
+function later(fn,ms){const id=setTimeout(fn,ms);DEMO.timers.push(id);return id;}
+function overview(){if(DC.home)DC.goal={pos:DC.home.pos.clone(),tgt:DC.home.tgt.clone()};}
+function tour(rows){const T=DC.THREE;DC.ctl.autoRotate=false;rows.forEach((r,i)=>later(()=>{const gs=DC.slabs.filter(g=>r.ids.includes(g.userData.p.id));if(!gs.length)return;
+    const c=new T.Vector3();gs.forEach(g=>c.add(g.position));c.divideScalar(gs.length);DC.goal={pos:new T.Vector3(c.x+34,c.y+26,c.z+40),tgt:c.clone()};
+    document.querySelectorAll('.dbrow').forEach(e=>e.classList.toggle('on',+e.dataset.i===i));},1300+i*2600));
+  later(()=>{overview();document.querySelectorAll('.dbrow').forEach(e=>e.classList.remove('on'));DC.ctl.autoRotate=true;},1300+rows.length*2600);}
+function typeInto(el,text,ms,done){el.value='';let i=0;const f=()=>{el.value=text.slice(0,++i);if(i<text.length)later(f,ms);else later(done,350);};later(f,ms);}
+function demoStep(){if(!DEMO.on||!DC.slabs)return;const q=DEMO.qs[DEMO.i++%DEMO.qs.length],qi=$('#dbqi');
+  DB.type=null;DB.q='';cityQuery();overview();$('#dbans').style.opacity=.0;
+  later(()=>typeInto(qi,q,55,()=>{cityAsk(q,{tour:true});later(demoStep,1300+3*2600+2600);}),900);}
+function demoStart(){demoStop(true);DEMO.on=true;DEMO.auto=true;const b=$('#dbplay');if(b){b.classList.remove('off');b.lastChild.textContent='Demo running';}demoStep();}
+function demoStop(keepAuto){DEMO.timers.forEach(clearTimeout);DEMO.timers=[];DEMO.on=false;if(!keepAuto)DEMO.auto=false;const b=$('#dbplay');if(b&&!keepAuto){b.classList.add('off');b.lastChild.textContent='Play demo';}}
+
+window.BL={DEMO,cityAsk,nlParse,DC,renderDBView,DB,renderDB,dbOpen,PROJ,FL,ST,T3,ANS,CFG,ask,answer,parseQ,evalSheet,addFiles,loadSample,setView,selectFloor,moveFloor,deleteFloor,queueRead,setTrace,poolSize,wallModel,fromTeamSchematic,fromTeamScene};
 </script>
 </body>
 </html>

@@ -291,7 +291,7 @@ details.how summary:hover{color:var(--ink)}
 .send:hover{background:#4A82F0}
 
 /* modal, toast, status */
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:20;padding:16px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:60;padding:16px}
 .mbox{width:min(560px,100%);max-height:90vh;overflow:auto;background:#262626;border:1px solid var(--bd2);border-radius:14px;padding:18px 20px}
 .mbox h2{margin:0 0 4px;font-size:16px}
 .mbox h3{margin:16px 0 8px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fnt);font-weight:500}
@@ -406,6 +406,16 @@ details.how summary:hover{color:var(--ink)}
 .dbans .ft{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
 .dbplay{border:1px solid #3A3A3A;background:rgba(34,34,34,.92);color:#CFCFCF;border-radius:8px;padding:6px 10px;font:500 12px Inter,sans-serif;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
 .dbplay i{width:7px;height:7px;border-radius:50%;background:#6FCF97;box-shadow:0 0 6px #6FCF97}.dbplay.off i{background:#777;box-shadow:none}
+
+.dbagent{border:1px solid #4A6FB0;background:linear-gradient(180deg,#2B4677,#22314B);color:#E6EEFF;border-radius:8px;padding:7px 13px;font:600 12.5px Inter,sans-serif;cursor:pointer;display:inline-flex;gap:8px;align-items:center;box-shadow:0 0 0 3px rgba(91,149,255,.12),0 0 18px rgba(91,149,255,.25)}
+.dbagent:hover{box-shadow:0 0 0 3px rgba(91,149,255,.22),0 0 24px rgba(91,149,255,.4)}
+.agq{margin-top:10px;font:11.5px/1.5 'JetBrains Mono',monospace;color:#AFC3E3;background:#1F1F1F;border:1px solid #2F2F2F;border-radius:6px;padding:6px 8px}
+.agq b{color:#8FB0EA;font-weight:500}.agq span{color:#7FB8A0}
+.agm h2{margin:0 0 4px}.agm .lead{color:#BDBDBD;margin:0 0 14px;line-height:1.55}
+.agst{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}.agst div{background:#262626;border:1px solid #333;border-radius:10px;padding:10px 12px}.agst b{display:block;font:600 20px Inter,sans-serif;color:#F2F2F2;letter-spacing:-.02em}.agst span{font-size:11.5px;color:var(--mut)}
+.agrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.agpre{font:11.5px/1.55 'JetBrains Mono',monospace;color:#C9D6EE;background:#1B1B1B;border:1px solid #2F2F2F;border-radius:8px;padding:10px 12px;white-space:pre-wrap;max-height:210px;overflow:auto;margin:6px 0 12px}
+.agh{font:600 11px Inter,sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--fnt);margin-top:4px}
 </style>
 </head>
 <body>
@@ -1634,7 +1644,7 @@ function traceReadingHTML(){const b=curB(),now=performance.now(),fs=b.floors.map
    11. Settings and help
    ===================================================================== */
 function modal(html){$('#mbox').innerHTML=html;$('#modal').hidden=false;setTimeout(()=>{const el=$('#mbox').querySelector('input:not([type=radio]),button');if(el)el.focus();},0);}
-function closeModal(){$('#modal').hidden=true;$('#mbox').innerHTML='';}
+function closeModal(){$('#modal').hidden=true;$('#mbox').innerHTML='';if(DEMO.resume){DEMO.resume=false;if(ST.view==='db')demoStart();}}
 function settingsModal(){const inC=!!window.claude;
   modal(`<h2>Settings</h2><p class="sub">Our model reads the floor plans. Everything after reading stays the same: answers with proof, 3D, and the trace.</p>
    <h3>Model server</h3>
@@ -1689,6 +1699,7 @@ document.addEventListener('click',e=>{
     case 'sample':loadSample();break;
     case 'dbopen':dbOpen(t.dataset.id);break;
     case 'dbtype':DB.type=DB.type===t.dataset.t?null:t.dataset.t;DB.q='';if(DC.mode==='city'&&DC.slabs){const qi=$('#dbqi');if(qi)qi.value='';cityQuery();}else{renderDB();$('#dbv').scrollTop=0;}break;
+    case 'agent':agentModal();break;
     case 'dbplay':if(DEMO.on)demoStop();else demoStart();break;
     case 'dbmode':DC.mode=t.dataset.m;$('#dbv').innerHTML='';renderDBView();break;
     case 'addb':{const b=newBuilding();setBuilding(b.id);toast(`${b.name} added. Add its floor plans.`);break;}
@@ -1846,7 +1857,7 @@ async function renderDBView(){if(!DB.data){await renderDB();if(!DB.data)return;}
     el.innerHTML=`<canvas id="dbc3" tabindex="0"></canvas><div id="dblabs"></div><div class="dbtip" id="dbtip" hidden></div>
     <div class="dbo tl"><div class="dbcard"><h1>Drawing database</h1><p>Each tower is a project, each layer a floor plan.</p>
       <div class="dbnums"><div><b>${nf(P.length)}</b><span>drawings</span></div><div><b>${pr}</b><span>projects</span></div><div><b>${nf(rooms)}</b><span>rooms found</span></div><div><b>${nf(D.models)}</b><span>3D models</span></div></div></div></div>
-    <div class="dbo tr" style="display:flex;gap:8px"><button type="button" class="dbplay" id="dbplay" data-act="dbplay"><i></i>Demo running</button><a class="dbx" href="${esc(DB.base+'db/index.json')}" download="blueline-database.json" title="The whole database as one JSON file, for other software and AI agents"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>Export for AI agents</a></div>
+    <div class="dbo tr" style="display:flex;gap:8px"><button type="button" class="dbplay" id="dbplay" data-act="dbplay"><i></i>Demo running</button><button type="button" class="dbagent" data-act="agent"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 12h.01M15 12h.01M9 16h6"/></svg>Give it to an AI agent</button></div>
     <div class="dbo rp"><div class="dbans" id="dbans" style="opacity:0"></div></div>
     <div class="dbres" id="dbres" hidden></div>
     <div class="dbo bc"><form class="dbask" id="dbaskf"><input id="dbqi" placeholder="Ask the whole archive…" autocomplete="off" spellcheck="false"><button type="submit" aria-label="Ask"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></svg></button></form></div>`;
@@ -1930,6 +1941,7 @@ function cityAsk(text,opt={}){text=String(text||'').trim();if(!text||!DC.slabs)r
     ans.innerHTML=`<div class="q">“${esc(text)}”</div><div class="num"><b id="dbcnt">0</b><span>${esc(M.rooms===1&&DB.type?TYPEL[DB.type][0].toLowerCase():noun)}</span></div>
       <div class="sub">on ${M.res.filter(x=>x.hits.length).length} floors in ${rows.length} buildings · ${M.ms<1?'under 1':Math.round(M.ms)} ms across ${nf(DB.data.plans.length)} drawings</div>
       ${rows.slice(0,6).map((r,i)=>`<div class="dbrow" data-i="${i}"><span>${esc(r.n)}<small>${r.f} floor${r.f>1?'s':''}</small></span><i style="width:${Math.max(6,r.c/mx*100)}%"></i><em>${r.c}</em></div>`).join('')}
+      <div class="agq"><b>agent</b> query(${DB.type?`type="${DB.type}"`:`text="${esc(DB.q)}"`}) <span>→ ${M.rooms} rooms · ${M.res.filter(x=>x.hits.length).length} floors · ${rows.length} buildings</span></div>
       <div class="ft"><span class="pill ok">Every room marked on its drawing</span></div>`;
     countUp($('#dbcnt'),M.rooms,900);
     if(opt.tour&&rows.length)tour(rows.slice(0,3));},650);}
@@ -1947,7 +1959,20 @@ function demoStep(){if(!DEMO.on||!DC.slabs)return;const q=DEMO.qs[DEMO.i++%DEMO.
 function demoStart(){demoStop(true);DEMO.on=true;DEMO.auto=true;const b=$('#dbplay');if(b){b.classList.remove('off');b.lastChild.textContent='Demo running';}demoStep();}
 function demoStop(keepAuto){DEMO.timers.forEach(clearTimeout);DEMO.timers=[];DEMO.on=false;if(!keepAuto)DEMO.auto=false;const b=$('#dbplay');if(b&&!keepAuto){b.classList.add('off');b.lastChild.textContent='Play demo';}}
 
-window.BL={DEMO,cityAsk,nlParse,DC,renderDBView,DB,renderDB,dbOpen,PROJ,FL,ST,T3,ANS,CFG,ask,answer,parseQ,evalSheet,addFiles,loadSample,setView,selectFloor,moveFloor,deleteFloor,queueRead,setTrace,poolSize,wallModel,fromTeamSchematic,fromTeamScene};
+
+function agentModal(){const D=DB.data;if(!D)return;DEMO.resume=DEMO.on;demoStop();const url=(DB.base||location.origin+'/')+'db/index.json',full=/^https?:/.test(url)?url:new URL(url,location.href).href;
+  const json=JSON.stringify(D),kb=Math.round(json.length/1024),tok=Math.round(json.length/4/1000),P=D.plans,rooms=P.reduce((a,p)=>a+p.rooms.length,0);
+  const ex=P.find(p=>p.kind==='cad'&&p.rooms.length>4)||P[0],sample=JSON.stringify({id:ex.id,project:ex.pn,floor:ex.fn,scale:ex.scale?'1:'+ex.scale:null,sizeM:ex.sizeM,rooms:ex.rooms.slice(0,3).map(r=>({name:r.name,number:r.num,type:r.type,x:r.x,y:r.y}))},null,2);
+  const prompt=`You have a structured database of ${nf(P.length)} construction drawings (${nf(rooms)} rooms) at:\n${full}\n\nEach plan has: id, project, floor, scale, sizeM [w,h], and rooms [{name, num, type, x, y}] where x,y are positions on the drawing (0 to 1).\nAnswer questions by querying this data, not by guessing. Always say which projects and floors an answer comes from.\n\nQuestion: `;
+  modal(`<div class="agm"><h2>Give the whole archive to an AI agent</h2><p class="lead">Agents can't read 607 messy drawings, but they can read one clean file. Blueline turns the archive into structured data an agent loads in one call, then answers about every room, floor and building, with positions as proof.</p>
+   <div class="agst"><div><b>1 file</b><span>instead of ${nf(P.length)} drawings</span></div><div><b>${kb} KB</b><span>about ${tok}k tokens, fits one agent context</span></div><div><b>${nf(rooms)}</b><span>rooms with name, type and position</span></div></div>
+   <div class="agrow"><a class="dbx" href="${esc(url)}" download="blueline-database.json">Download JSON</a><button type="button" class="dbx" data-copy="url">Copy data URL</button><button type="button" class="dbx" data-copy="prompt">Copy agent prompt</button></div>
+   <div class="agh">What the agent sees (one floor)</div><pre class="agpre">${esc(sample)}</pre>
+   <div class="agh">Prompt for any agent</div><pre class="agpre">${esc(prompt)}…</pre>
+   <div class="row" style="justify-content:flex-end;display:flex"><button type="button" class="dbx" data-act="close">Close</button></div></div>`);
+  $('#mbox').querySelectorAll('[data-copy]').forEach(b=>b.onclick=async()=>{const t=b.dataset.copy==='url'?full:prompt;try{await navigator.clipboard.writeText(t);b.textContent='Copied';}catch(e){b.textContent='Copy failed';}setTimeout(()=>b.textContent=b.dataset.copy==='url'?'Copy data URL':'Copy agent prompt',1400);});}
+
+window.BL={agentModal,DEMO,cityAsk,nlParse,DC,renderDBView,DB,renderDB,dbOpen,PROJ,FL,ST,T3,ANS,CFG,ask,answer,parseQ,evalSheet,addFiles,loadSample,setView,selectFloor,moveFloor,deleteFloor,queueRead,setTrace,poolSize,wallModel,fromTeamSchematic,fromTeamScene};
 </script>
 </body>
 </html>

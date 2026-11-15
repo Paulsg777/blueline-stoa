@@ -1858,7 +1858,7 @@ async function dbOpen(id){const p=DB.data&&DB.data.plans.find(x=>x.id===id);if(!
   if(exist){setBuilding(exist.bId);selectFloor(exist.id);setView('plan');return;}
   let b=PROJ.buildings.find(x=>x.name===p.pn);if(!b){const e=PROJ.buildings.find(x=>!x.floors.length);b=e||newBuilding(p.pn);b.name=p.pn;}
   setBuilding(b.id);setView('plan');toast(`Opening ${p.pn} · ${p.fn||p.floor}…`);
-  try{const r=await fetch(SRCRAW+p.file);if(!r.ok)throw 0;const bl=await r.blob();await addFiles([new File([bl],p.file,{type:p.kind==='scan'?'image/png':'application/pdf'})]);}catch(e){toast('Could not fetch that drawing.');}}
+  try{const r=await fetch(SRCRAW+p.file);if(!r.ok)throw 0;const bl=await r.blob();await addFiles([new File([bl],p.file,{type:p.kind==='scan'?'image/png':'application/pdf'})]);const nf=Object.values(FL).find(f=>!f.deleted&&f.file&&f.file.startsWith(p.id));if(nf){selectFloor(nf.id);if(ST.view!=='plan')setView('plan');}}catch(e){toast('Could not fetch that drawing.');}}
 
 
 /* ---- the database as a city of towers: every project a stack of its floor plans ---- */
@@ -1908,6 +1908,8 @@ async function buildCity(){if(!(await ensure3D()))return;const THREE=T3.THREE,{O
   const sl=document.createElement('div');sl.className='dblab';sl.innerHTML=`${scans.length} scans<b>waiting for the reader</b>`;$('#dblabs').appendChild(sl);labels.push({el:sl,t:null,pos:new THREE.Vector3(sx,4,0)});
   const span=COLS*SP;cam.position.set(span*.55,span*.62,span*1.05);ctl.target.set(0,8,0);DC.home={pos:cam.position.clone(),tgt:ctl.target.clone()};
   Object.assign(DC,{R,sc,cam,ctl,slabs,labels,ray:new THREE.Raycaster(),ndc:new THREE.Vector2(),v:new THREE.Vector3(),t0:performance.now(),hover:null,THREE,gDot:new THREE.SphereGeometry(.42,12,10),mDot:new THREE.MeshBasicMaterial({color:0x7FB0FF})});
+  c.addEventListener('pointerdown',e=>{DC.down=[e.clientX,e.clientY];});
+  c.addEventListener('pointerup',e=>{const d=DC.down;DC.down=null;if(!d||Math.hypot(e.clientX-d[0],e.clientY-d[1])>5)return;cityHover(e);if(DC.hover){demoStop();dbOpen(DC.hover.id);}});
   c.addEventListener('pointermove',cityHover);c.addEventListener('pointerleave',()=>{DC.hover=null;$('#dbtip').hidden=true;});
   new ResizeObserver(citySize).observe($('#dbv'));citySize();startCity();}
 function citySize(){if(!DC.R)return;const el=$('#dbv'),w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;DC.R.setSize(w,h,false);DC.cam.aspect=w/h;DC.cam.updateProjectionMatrix();}
@@ -1937,7 +1939,7 @@ function cityHover(e){const c=$('#dbc3'),b=c.getBoundingClientRect();DC.ndc.set(
   if(!hit){DC.hover=null;tip.hidden=true;c.style.cursor='';return;}const p=hit.object.userData.p;DC.hover=p;c.style.cursor='pointer';
   const hs=(DB.q.trim()||DB.type)?(dbMatch().res.find(x=>x.p.id===p.id)||{hits:[]}).hits:[],tc={};p.rooms.forEach(r=>tc[r.type]=(tc[r.type]||0)+1);
   const top=Object.entries(tc).filter(([k])=>k!=='other').sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,n])=>`${n} ${TYPEL[k][1].toLowerCase()}`).join(' · ');
-  tip.innerHTML=`<b>${esc(p.pn)}</b><span>${esc(p.fn||p.floor)} · ${p.rooms.length} rooms${p.scale?` · 1:${p.scale}`:''}</span>${hs.length?`<em>${esc([...new Set(hs.map(r=>r.name+(r.num?' '+r.num:'')))].slice(0,5).join(' · '))}</em>`:top?`<em>${esc(top)}</em>`:''}`;
+  tip.innerHTML=`<b>${esc(p.pn)}</b><span>${esc(p.fn||p.floor)} · ${p.rooms.length} rooms${p.scale?` · 1:${p.scale}`:''}</span>${hs.length?`<em>${esc([...new Set(hs.map(r=>r.name+(r.num?' '+r.num:'')))].slice(0,5).join(' · '))}</em>`:top?`<em>${esc(top)}</em>`:''}<small>Click to open this drawing</small>`;
   tip.hidden=false;tip.style.left=Math.min(b.width-290,e.clientX-b.left+14)+'px';tip.style.top=(e.clientY-b.top+14)+'px';}
 
 

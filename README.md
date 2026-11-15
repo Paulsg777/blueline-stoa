@@ -96,3 +96,16 @@ interface BluelineSchema {
 ## Licence
 
 MIT
+
+## The reader (server)
+
+The files next to `index.html` are our model's server: `POST /analyze`, `/ask`, `/plan`, and the page itself on `GET /`.
+
+How a sheet is read (`blueline_api.py`):
+1. **One model call per sheet** (Gemini 4 Argon) says what is there: the sheet type, the rooms with a point and any printed area, doors, windows, fixtures, other equipment with its printed tag, and where the scale bar is. It never measures.
+2. **Code measures and checks everything.** Scale from the scale bar by OCR, checked against the bar the model points at, against a printed ratio and for a plausible sheet size; with no bar, from the printed room areas. Room outlines from our segmenter or grown from the drawn walls, whichever lies on the walls (`on_walls`). Doors from our detector, a model-listed door only where code finds its swing arc (`arcs.py`). Equipment boxes on its tag as read by OCR.
+3. **A second look** (on by default, `VERIFY=0` turns it off): the model sees our result drawn on the sheet and names mistakes; code checks each claim before anything changes, and every decision is in `meta.check`.
+
+Run it: put `GEMINI_API_KEY=...` in `.env`, then `python3 blueline_api.py` (http://localhost:8000). Host it: `modal deploy blueline_modal.py`.
+The trained weights (`unet_swiss.pt`, `yolo_swiss.pt`) are not in this repository; without them the reader still works, using the model's list and the wall-grown rooms.
+`inspect_sheet.py <sheet>` draws what the reader found on a sheet; `compare_models.py` compares perception models on sheets with ground truth.

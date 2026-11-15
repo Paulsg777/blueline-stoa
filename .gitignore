@@ -1,0 +1,12 @@
+# secrets
+.env
+# trained weights: trained on the challenge data, not redistributed here
+*.pt
+# caches and local data
+perception_cache/
+read_cache/
+__pycache__/
+gt/
+examples/
+bench_out*/
+_stoa_doors.json

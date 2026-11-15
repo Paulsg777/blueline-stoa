@@ -1152,7 +1152,7 @@ function renderInspect(){const el=$('#insp'),f=FL[ST.fid],sc=f&&f.schema,r=sc&&S
   const mpp=sc.drawing.metersPerPixel,tr=mpp?shoelace(r.polygon)*mpp*mpp:null,its=sc.items.filter(i=>i.roomIds.includes(r.id)),c=k=>its.filter(i=>i.kind===k).length,fx=its.filter(i=>!['door','window'].includes(i.kind));
   el.hidden=false;el.innerHTML=`<button class="x" data-act="desel" aria-label="Close">${I.x}</button><h4>${esc(RT[r.type].en)} <span class="asc">${esc(r.label)}${r.unit?' · '+esc(r.unit):''}</span></h4>
     ${r.measuredAreaM2!=null?`<div class="row"><span>Area measured</span><b>${f1(r.measuredAreaM2)} m²</b></div>`:''}${r.printedAreaM2!=null?`<div class="row"><span>Area printed</span><b>${f1(r.printedAreaM2)} m²</b></div>`:''}<div class="row"><span>Area traced</span><b>${tr!=null?f1(tr)+' m²':'no scale'}</b></div>
-    <div class="row"><span>Doors</span><b>${c('door')}</b></div><div class="row"><span>Windows</span><b>${c('window')}</b></div>${fx.length?`<div class="row"><span>Fixtures</span><b>${fx.map(i=>(KIND[i.kind]||KIND.other)[0]).join(', ')}</b></div>`:''}`;}
+    <div class="row"><span>Doors</span><b>${c('door')}</b></div><div class="row"><span>Windows</span><b>${c('window')}</b></div>${fx.length?`<div class="row"><span>Fixtures</span><b>${fx.map(i=>(KIND[i.kind]||[i.kind])[0]).join(', ')}</b></div>`:''}`;}
 function fitPlan(){const f=FL[ST.fid];if(!f)return;const el=$('#vw'),cw=el.clientWidth||900,ch=el.clientHeight||600,bx=cropOf(f),bw=bx[2]-bx[0],bh=bx[3]-bx[1],s=Math.max(bw/Math.max(100,cw-60),bh/Math.max(100,ch-150));
   VB[f.id]={x:(bx[0]+bx[2])/2-cw*s/2,y:(bx[1]+bx[3])/2-ch*s/2-10*s,w:cw*s,h:ch*s,auto:true};applyVB();}
 function applyVB(){const v=VB[ST.fid],el=$('#vw');if(!v)return;v.h=v.w*(el.clientHeight||600)/(el.clientWidth||900);$('#psvg').setAttribute('viewBox',`${v.x} ${v.y} ${v.w} ${v.h}`);}
@@ -1368,7 +1368,7 @@ async function ask(q,scope){q=q.trim();if(!q)return;const ms=$('#msgs');ms.query
   if(A.kind!=='nope')activate(A.n);else{d.innerHTML=ansHTML(A);if(!A.planned)askServer(A,d);}ms.scrollTop=ms.scrollHeight;if(ST.trOpen)setTrace(null,'answer');}
 /* our model turns the question into a plan (see PLAN_API.md); nothing is answered by the model itself */
 async function planServer(q){await probeP;if(CFG.proto!=='analyze'||CFG.noPlan)return null;
-  const fl=Object.values(FL).filter(f=>!f.deleted&&isRead(f)),voc={itemKinds:Object.keys(KIND),roomTypes:Object.keys(RT),labels:[...new Set(fl.flatMap(f=>f.schema.rooms.map(r=>r.label).filter(Boolean)))].slice(0,200),apartments:[...new Set(fl.flatMap(f=>unitsOf(f.schema)))].slice(0,100),floors:curB().floors.length};
+  const fl=Object.values(FL).filter(f=>!f.deleted&&isRead(f)),voc={itemKinds:[...new Set([...Object.keys(KIND),...fl.flatMap(f=>((f.schema&&f.schema.items)||[]).map(i=>i.kind).filter(Boolean))])].slice(0,300),roomTypes:Object.keys(RT),labels:[...new Set(fl.flatMap(f=>f.schema.rooms.map(r=>r.label).filter(Boolean)))].slice(0,200),apartments:[...new Set(fl.flatMap(f=>unitsOf(f.schema)))].slice(0,100),floors:curB().floors.length};
   const t0=performance.now(),ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),8000);
   try{const r=await fetch(CFG.endpoint+'/plan',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,vocabulary:voc}),signal:ctl.signal});
     if(r.status===404||r.status===405){CFG.noPlan=true;return null;}if(!r.ok)return null;const j=await r.json();
@@ -1398,9 +1398,18 @@ function runPlan(pl,q,scope0,meta){const t0=performance.now(),A={n:++QN,q,P:{t:{
   if(!ok.length){A.kind='nope';A.text=missing.length?'These floors are not read yet.':'There is no scale or printed area here, so I won’t give an area you can’t check.';}
   else{A.value=ok.reduce((a,p)=>a+p.val,0);A.kind=isArea?'area':'count';
     if(isArea&&op!=='sum_area'){const best=[...ok].sort((a,c)=>op==='min_area'?a.val-c.val:c.val-a.val)[0],r=best.x.room;A.kind='extreme';A.value=best.val;A.top=best.fid;A.per=A.per.map(p=>p.fid===best.fid?p:{...p,ev:[],dim:true});if(r)A.text=`The ${op==='min_area'?'smallest':'largest'} is ${r.label||RT[r.type].en}${fls.length>1?`, on ${fname(FL[best.fid])}`:''}.`;}
-    const what=pl.find==='item'?(kinds.length===1&&KIND[kinds[0]]?KIND[kinds[0]]:['item','items']):(types.length===1&&RT[types[0]]?[RT[types[0]].en.toLowerCase(),RT[types[0]].pl]:['room','rooms']);A.noun=what;
+    const what=pl.find==='item'?(kinds.length===1?(KIND[kinds[0]]||[kinds[0],kinds[0]+'s']):['item','items']):(types.length===1&&RT[types[0]]?[RT[types[0]].en.toLowerCase(),RT[types[0]].pl]:['room','rooms']);A.noun=what;
     A.pill=missing.length?['chk',`${missing.length} floor${missing.length>1?'s':''} not read`]:['ok','Planned by our model'];A.calc=`${pl.readAs||''}\n= ${isArea?f1(A.value)+' m²':A.value}`;
     if(ok.length>1&&A.kind!=='extreme')S('sum_floors',`${ok.map(p=>isArea?f1(p.val):p.val).join(' + ')} = ${isArea?f1(A.value)+' m²':A.value}`);
+    if(pl.then&&A.kind!=='extreme'){ // arithmetic the question asks for (tiles, paint ...): done here in code, every step shown
+      const U={m2:1,'m²':1,cm2:1e-4,'cm²':1e-4,mm2:1e-6,'mm²':1e-6,ft2:0.09290304,'ft²':0.09290304,m:1,cm:0.01,mm:0.001,ft:0.3048};
+      let v=A.value;const parts=[];
+      for(const t of arr(pl.then)){if(!t)continue;const k=U[t.unit]!=null?U[t.unit]:1,x=(+t.value)*k;if(!isFinite(x)||(t.op==='/'&&x===0))continue;const v0=v;
+        v=t.op==='/'?v/x:t.op==='*'?v*x:t.op==='+'?v+x:t.op==='-'?v-x:v;
+        parts.push(`${parts.length?+v0.toPrecision(6):(isArea?f1(v0)+' m²':v0)} ${t.op} ${t.value}${t.unit?' '+t.unit:''}${k!==1?` (${+x.toPrecision(6)} ${/2|²/.test(t.unit)?'m²':'m'})`:''} = ${+v.toPrecision(6)}`);}
+      if(parts.length){const r=pl.round==='up'?Math.ceil(v-1e-9):pl.round==='down'?Math.floor(v+1e-9):pl.round==='nearest'?Math.round(v):+v.toPrecision(4);
+        S('arithmetic',parts.join(' · ')+(pl.round?` → rounded ${pl.round}: ${r}`:''));
+        A.calc+=`\n${parts.join('\n')}${pl.round?`\n→ ${r}`:''}`;A.value=r;A.unit='';A.kind='count';const nn=String(pl.resultUnit||'');A.noun=[nn.replace(/s$/,''),nn];}}
     S('verify',`${ok.reduce((a,p)=>a+(p.dim?0:p.ev.length),0)} ${pl.find==='item'?'items':'rooms'} marked on the drawing${ok.length>1?'s':''}. The plan only says what to look for; every number comes from what was read.`);}
   A.ms=performance.now()-t0;S('cost',`${meta.modelCalls} model call${meta.modelCalls===1?'':'s'} to read the question${meta.tokens!=null?`, ${meta.tokens} tokens`:''}; the answer itself is code (${fmtMs(A.ms)}).`,{ms:A.ms});
   return A;}

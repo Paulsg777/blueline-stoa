@@ -1,0 +1,7 @@
+ezdxf
+pymupdf
+shapely
+pillow
+numpy
+openai
+google-genai

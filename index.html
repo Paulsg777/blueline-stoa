@@ -1390,7 +1390,7 @@ async function multiAnswer(pl,q,scope,ms){const subs=[];
   ms.scrollTop=ms.scrollHeight;}
 async function planServer(q){await probeP;if(CFG.proto!=='analyze'||CFG.noPlan)return null;
   const fl=Object.values(FL).filter(f=>!f.deleted&&isRead(f)),voc={itemKinds:[...new Set([...Object.keys(KIND),...fl.flatMap(f=>((f.schema&&f.schema.items)||[]).map(i=>i.kind).filter(Boolean))])].slice(0,300),roomTypes:Object.keys(RT),labels:[...new Set(fl.flatMap(f=>f.schema.rooms.map(r=>r.label).filter(Boolean)))].slice(0,200),apartments:[...new Set(fl.flatMap(f=>unitsOf(f.schema)))].slice(0,100),floors:curB().floors.length};
-  const t0=performance.now(),ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),8000);
+  const t0=performance.now(),ctl=new AbortController(),tm=setTimeout(()=>ctl.abort(),30000); // planning a question that splits into parts takes the model 10-20 s
   try{const r=await fetch(CFG.endpoint+'/plan',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question:q,vocabulary:voc}),signal:ctl.signal});
     if(r.status===404||r.status===405){CFG.noPlan=true;return null;}if(!r.ok)return null;const j=await r.json();
     const meta={ms:performance.now()-t0,modelCalls:j.modelCalls??1,tokens:j.tokens??null};if(j&&Array.isArray(j.plans)&&j.plans.length>=2)return{plans:j.plans,conclude:j.conclude||'',meta};

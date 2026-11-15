@@ -30,7 +30,7 @@ app = modal.App("blueline-api")
 
 @app.function(image=image, secrets=[modal.Secret.from_dotenv(HERE)], cpu=4, memory=8192, min_containers=1, timeout=3600)
 @modal.concurrent(max_inputs=8)
-@modal.web_server(8000, startup_timeout=180)
+@modal.web_server(8000, startup_timeout=180, label="bsearch")
 def serve():
     import subprocess
     env = dict(os.environ, PORT="8000")

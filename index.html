@@ -686,7 +686,7 @@ function drawGeneric(sc){const d=sc.drawing;let s=`<rect class="pg" width="${d.w
 const PROJ={name:'My project',buildings:[{id:'A',name:'Building A',floors:[]}]};
 const FL={};let FN=0;
 const ST={view:'plan',bId:'A',fid:null,scopeMode:'auto',scope:{type:'building',id:'A'},active:null,sel:null,trace:true,trOpen:true,orig:false,trTab:'reading',trN:0,trRaw:false};
-const CFG={endpoint:(new URLSearchParams(location.search).get('api')||store.get('bl_endpoint','http://localhost:8000')).replace(/\/$/,''),proto:null,probing:true};
+const CFG={endpoint:(new URLSearchParams(location.search).get('api')||store.get('bl_endpoint',/^(localhost|127\.0\.0\.1)$/.test(location.hostname)?'http://localhost:8000':'https://aistis-verkauskas--bsearch.modal.run')).replace(/\/$/,''),proto:null,probing:true};
 const hostOf=u=>{try{return new URL(u).host;}catch(e){return u;}};
 const bld=id=>PROJ.buildings.find(b=>b.id===id);
 const curB=()=>bld(ST.bId);

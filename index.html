@@ -102,18 +102,18 @@ table.kt{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
 
 /* left: buildings + floors */
 .left{background:var(--pan);display:flex;flex-direction:column;min-height:0}
-.btabs{display:flex;gap:5px;padding:10px 10px 2px;flex-wrap:wrap}
-.btab{position:relative;display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 9px 0 5px;border:1px solid var(--bd2);border-radius:8px;background:#272727;color:#CFCFCF;max-width:100%}
+.btabs{display:flex;flex-direction:column;gap:5px;padding:10px 10px 2px}
+.btab{position:relative;display:flex;align-items:center;gap:7px;width:100%;height:30px;padding:0 6px 0 5px;border:1px solid var(--bd2);border-radius:8px;background:#272727;color:#CFCFCF;text-align:left;transition:background .15s,border-color .15s}
 .btab:hover{border-color:#555}
 .btab.on{background:#253148;border-color:#4A6FB0;color:#fff}
 .btab.drop{outline:2px dashed var(--blue);outline-offset:1px}
 .btab .bk{width:18px;height:18px;border-radius:5px;background:#3A3A3A;display:grid;place-items:center;font:700 11px Inter;flex:none}
 .btab.on .bk{background:var(--bdg)}
-.btab .bn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.btab .bn{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btab .bc{font:11px 'JetBrains Mono',monospace;color:var(--mut)}
-.btab .bx{display:none;width:16px;height:16px;border-radius:4px;place-items:center;color:var(--mut)}
-.btab:hover .bx{display:grid}.btab .bx:hover{background:#444;color:#fff}
-.btab.add{padding:0 9px;color:var(--mut);border-style:dashed}
+.btab .bx{display:grid;visibility:hidden;width:18px;height:18px;border-radius:4px;place-items:center;color:var(--mut);flex:none}
+.btab:hover .bx{visibility:visible}.btab .bx:hover{background:#444;color:#fff}
+.btab.add{padding:0 9px;color:var(--mut);border-style:dashed;width:auto;align-self:flex-start;height:28px}
 .btab input{width:110px;background:var(--fld);border:1px solid var(--blue);border-radius:4px;padding:1px 4px}
 .fhead{display:flex;align-items:center;gap:8px;padding:12px 14px 6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fnt)}
 .fhead .tip{text-transform:none;letter-spacing:0;font-size:11.5px}

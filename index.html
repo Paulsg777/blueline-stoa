@@ -94,6 +94,8 @@ table.kt{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
 .gv{font:12px 'JetBrains Mono',monospace;color:var(--fnt);text-align:right}
 .tsum{color:var(--mut);margin:6px 0 4px;line-height:1.5}
 .tsum b{color:#E6E6E6;font-weight:600}
+.fbig{font-size:20px;color:var(--mut);margin:6px 0 8px;display:flex;gap:18px}.fbig b{color:#F2F2F2;font-size:26px;font-weight:600;margin-right:5px}
+.ff{color:var(--mut);margin:3px 0;line-height:1.5}.ff b{color:#E6E6E6;font-weight:600}.ff.bad{color:#F2B84B}
 .ttabs .tl{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue2);margin-left:6px;vertical-align:middle;animation:pulse 1s infinite}
 .mbox code{font:11.5px 'JetBrains Mono',monospace;background:#1E1E1E;border-radius:4px;padding:0 4px;color:#CFE0FF}
 
@@ -732,7 +734,7 @@ async function readApi(f){startRead(f);f.live=null;const ctl=new AbortController
     rstep(f,'model.upload','run',`POST ${ep}/api/plan · ${fmtBytes(blob.size)}`);
     let res;try{res=await fetch(ep+'/api/plan',{method:'POST',body:blob,headers:{'X-Filename':(f.file||'plan').replace(/[^\w.\- ]/g,'_')+'.png'},signal:ctl.signal});}
     catch(e){throw e.name==='AbortError'?{code:'cancelled'}:{code:'offline',message:window.claude?`claude.ai blocks this page from calling ${ep}. Open Blueline from the model server instead (copy index.html into its web/ folder).`:`Can't reach our model at ${ep}. Is the server running? If this page is not served by it, the server must allow CORS.`};}
-    if(res.status===404||res.status===405){rstep(f,'model.upload','warn','No /api/plan on this server, so it reads through /analyze.');CFG.proto='analyze';return await readAnalyze(f,ep,blob,ctl);}
+    if(res.status===404||res.status===405){rstep(f,'model.upload','ok','Using /analyze.');CFG.proto='analyze';return await readAnalyze(f,ep,blob,ctl);}
     if(!res.ok)throw{code:'api_error',message:`${ep}/api/plan answered ${res.status}`};
     const pl=await res.json();rstep(f,'model.upload','ok',`plan ${pl.id} · ${pl.width} × ${pl.height} px · text from ${pl.text_source||'?'} (${pl.n_text||0} lines) · ${pl.seconds} s on the server`);
     rstep(f,'model.scene','run',`GET /api/scene?id=${pl.id}`);
@@ -1128,7 +1130,7 @@ function drawEvidence(){const f=FL[ST.fid],sc=f&&f.schema,p=sc&&activeN(f.id);if
     else{const it=sc.items.find(x=>x.id===e.id);if(!it)return;const[a,b,c,d]=it.box,cx=(a+c)/2;s+=`<rect class="evb" x="${a-3/k}" y="${b-3/k}" width="${c-a+6/k}" height="${d-b+6/k}"/><circle class="evp" cx="${cx}" cy="${b-rr-4/k}" r="${rr}"/><text class="evt" x="${cx}" y="${b-rr-4/k+fs*.36}" font-size="${fs}">${i}</text>`;}});
   $('#pev').innerHTML=s;}
 function renderFlab(){const f=FL[ST.fid];if(!f||f.deleted){$('#flab').innerHTML='';return;}const b=bld(f.bId),i=b.floors.indexOf(f.id),sc=f.schema;
-  const meta=f.status==='read'?`Read by ${esc(f.readBy)}${sc.drawing.scale&&sc.drawing.scale.method!=='none'?` · scale from ${esc(sc.drawing.scale.method)}`:' · no scale found'}`:esc(f.file);
+  const FF=f.status==='read'?floorFacts(f):null,meta=FF?(FF.bad?`<span style="color:#F2B84B">⚠ Size looks wrong, areas can't be trusted</span>`:`${f1(FF.w)} × ${f1(FF.h)} m · ${FF.rooms} rooms · ${FF.doors} doors`):esc(f.file);
   $('#flab').innerHTML=`<button class="nb" data-act="fldn" title="Floor below (↓)" aria-label="Floor below" ${i<=0?'disabled':''}>${I.down}</button><div class="ft"><b>${esc(b.name)} · ${esc(fname(f))}</b><span>${meta}</span></div><button class="nb" data-act="flup" title="Floor above (↑)" aria-label="Floor above" ${i>=b.floors.length-1?'disabled':''}>${I.up}</button>`;}
 function renderVnav(){$('#vnav').innerHTML=`<button class="nb" data-act="zi" title="Zoom in" aria-label="Zoom in">${I.plus}</button><button class="nb" data-act="zo" title="Zoom out" aria-label="Zoom out">${I.minus}</button><button class="nb" data-act="fit" title="Frame the drawing (F)" aria-label="Frame">${I.fit}</button><button class="nb ${ST.trace?'on':''}" data-act="trace" title="Show what Blueline read (R)" aria-label="Show what Blueline read" aria-pressed="${ST.trace}">${I.layers}</button><button class="nb ${ST.orig?'on':''}" data-act="orig" title="Original drawing, as uploaded (O)" aria-label="Show the original drawing" aria-pressed="${ST.orig}">${I.orig}</button>`;}
 function renderLegend(){const f=FL[ST.fid],el=$('#legend');if(!f||!f.schema){el.hidden=true;return;}const p=activeN(f.id),A=ST.active;let h='';
@@ -1461,18 +1463,31 @@ const STEPN={parse_question:'Question',select_floors:'Floors used',verify:'Check
 const stepName=k=>STEPN[k]||(/^count_items/.test(k)?'Counted':/^count_rooms/.test(k)?'Counted rooms':/^count_apartments/.test(k)?'Apartments':/area/.test(k)?'Measured':k);
 function stepHTML(s){return`<div class="ts ${s.s||'ok'}"><span class="tdot"></span><code title="${esc(s.k)}">${esc(stepName(s.k))}</code><span class="td">${esc(s.d||'')}</span><span class="tm">${s.s==='run'?fmtMs(performance.now()-s.t0):s.ms!=null?fmtMs(s.ms):''}</span></div>`;}
 function traceAnswerHTML(){const ns=Object.keys(ANS).map(Number),A=ANS[ST.trN]||(ns.length?ANS[Math.max(...ns)]:null);
-  if(!A)return`<div class="tempty">Ask a question and every step shows here: how the question was read, which floors were used, each count or area with the items behind it, the check, and what it cost. Answers are plain code over the schema, so asking makes no model calls.</div>`;
+  if(!A)return`<div class="tempty">Ask a question to see how the answer was found.</div>`;
   const val=A.server?`${typeof A.server.answer==='number'?Math.round(A.server.answer*100)/100:A.server.answer} ${A.server.unit||''}`:A.kind==='nope'?'cannot verify':A.unit==='m²'?f1(A.value)+' m²':A.value+' '+nounA(A,A.value);
   return`<div class="tq">“${esc(A.q)}” <span class="asc">→ ${esc(val)}</span></div>`+A.steps.map(stepHTML).join('');}
+function floorFacts(f){const S=f.schema||{},d=S.drawing||{},it=S.items||[],k=t=>it.filter(i=>String(i.kind||i.type||'').toLowerCase().includes(t)).length;
+  const mpp=d.metersPerPixel,w=mpp&&d.width?d.width*mpp:0,h=mpp&&d.height?d.height*mpp:0,sc=d.scale||{},bad=!mpp||Math.max(w,h)<8||Math.max(w,h)>300;
+  const how=/1\s*:\s*\d/.test(sc.text||'')?'from the "'+sc.text+'" note':/bar/i.test(sc.method||'')?'from the scale bar'+(sc.text?' ("'+sc.text+'")':''):/wall/i.test(sc.method||'')?'estimated from wall thickness':'estimated';
+  return{rooms:(S.rooms||[]).length,doors:k('door'),windows:k('window'),w,h,bad,how};}
 function traceReadingHTML(){const b=curB(),now=performance.now(),fs=b.floors.map(id=>FL[id]).filter(f=>f.rt);let h='';
-  if(fs.length){const T0=Math.min(...fs.map(f=>f.rt.s)),T1=Math.max(...fs.map(f=>f.rt.e||now)),span=Math.max(1,T1-T0),sum=fs.reduce((a,f)=>a+((f.rt.e||now)-f.rt.s),0),tok=fs.reduce((a,f)=>a+(f.usage?f.usage.in+f.usage.out:0),0),done=fs.filter(f=>f.rt.e).length;
-    h+=`<div class="tsum"><b>${done} of ${fs.length}</b> floor${fs.length>1?'s':''} read in <b>${fmtMs(T1-T0)}</b>, up to ${poolSize()} at a time${fs.length>1&&sum>(T1-T0)*1.2?`; one after another would take about ${fmtMs(sum)}`:''}${tok?` · ${fmtTok(tok)} tokens`:''}. Click a row for its steps.</div>`;
+  if(fs.length>1){const T0=Math.min(...fs.map(f=>f.rt.s)),T1=Math.max(...fs.map(f=>f.rt.e||now)),span=Math.max(1,T1-T0),done=fs.filter(f=>f.rt.e).length;
+    h+=`<div class="tsum">${done<fs.length?`Reading <b>${done} of ${fs.length}</b> floors`:`<b>${fs.length}</b> floors read`} · <b>${fmtMs(T1-T0)}</b></div>`;
     h+=`<div class="gantt">${[...fs].reverse().map(f=>{const e=f.rt.e||now;return`<button type="button" class="grow ${f.id===ST.fid?'on':''}" data-act="trf" data-f="${f.id}"><span class="gn">${esc(fname(f))}</span><span class="gt"><i class="${f.status}" style="left:${((f.rt.s-T0)/span*100).toFixed(2)}%;width:${Math.max(.8,(e-f.rt.s)/span*100).toFixed(2)}%"></i></span><span class="gv">${fmtMs(e-f.rt.s)}</span></button>`;}).join('')}</div>`;}
   const f=FL[ST.fid];
-  if(!f||f.deleted)return h||`<div class="tempty">Add floor plans to watch each one being read: preparing the image, the reader's call with its live output, finding the scale, the checks, and building the 3D.</div>`;
-  h+=`<div class="tgh">${esc(bld(f.bId).name)} · ${esc(fname(f))} <span class="asc">${esc(f.file||'')}</span></div>`;
-  h+=f.steps.length?f.steps.map(stepHTML).join(''):`<div class="tempty">${f.status==='queued'?'Waiting for a free reader.':f.status==='nokey'?esc(f.err||''):'Not read yet.'}</div>`;
-  if(f.rawTail&&f.rawTail.length){if(f.status==='reading'||ST.trRaw)h+=`<div class="tgh">Latest lines from the reader</div><pre class="raw">${esc(f.rawTail.join('\n'))}</pre>`;else h+=`<button type="button" class="alink" data-act="trraw" style="margin-top:8px">Show the reader's last lines</button>`;}
+  if(!f||f.deleted)return h||`<div class="tempty">Add a floor plan to see what was found on it.</div>`;
+  h+=`<div class="tgh">${esc(fname(f))}</div>`;
+  if(f.status==='queued')h+=`<div class="tempty">Waiting its turn…</div>`;
+  else if(f.status==='reading'){const st=[...f.steps].reverse().find(x=>x.s==='run');h+=`<div class="tempty">Reading… ${f.rt?fmtMs(now-f.rt.s):''}${st?' · '+esc(stepName(st.k)):''}</div>`;}
+  else if(f.status==='error'||f.status==='nokey'||f.err)h+=`<div class="ff bad">Could not read this floor. ${esc(f.errShort||f.err||'')}</div>`;
+  else if(f.schema){const F=floorFacts(f);
+    h+=`<div class="fbig"><b>${F.rooms}</b> rooms <b>${F.doors}</b> doors <b>${F.windows}</b> windows</div>`;
+    h+=F.bad?`<div class="ff bad">⚠ Size looks wrong${F.w?` (${f1(F.w)} × ${f1(F.h)} m)`:''}. Areas and lengths on this floor can't be trusted.</div>`
+            :`<div class="ff">Size <b>${f1(F.w)} × ${f1(F.h)} m</b> · scale ${esc(F.how)}</div>`;
+    if(f.rt&&f.rt.e)h+=`<div class="ff">Read in ${fmtMs(f.rt.e-f.rt.s)}</div>`;}
+  if(f.steps.length){h+=`<button type="button" class="alink" data-act="trraw" style="margin-top:10px">${ST.trRaw?'Hide':'Show'} technical details</button>`;
+    if(ST.trRaw){h+=`<div class="asc" style="margin-top:6px">${esc(f.file||'')}</div>`+f.steps.map(stepHTML).join('');
+      if(f.rawTail&&f.rawTail.length)h+=`<pre class="raw">${esc(f.rawTail.join('\n'))}</pre>`;}}
   return h;}
 
 /* =====================================================================
